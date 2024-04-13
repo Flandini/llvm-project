@@ -10,11 +10,14 @@
 #define LLVM_LIBC_SRC___SUPPORT_FPUTIL_DIVISIONANDREMAINDEROPERATIONS_H
 
 #include "FPBits.h"
+#include "FEnvImpl.h"
 #include "ManipulationFunctions.h"
 #include "NormalFloat.h"
 
 #include "src/__support/CPP/type_traits.h"
 #include "src/__support/common.h"
+#include <asm-generic/errno-base.h>
+#include <fenv.h>
 
 namespace LIBC_NAMESPACE {
 namespace fputil {
@@ -30,8 +33,11 @@ LIBC_INLINE T remquo(T x, T y, int &q) {
     return x;
   if (ybits.is_nan())
     return y;
-  if (xbits.is_inf() || ybits.is_zero())
+  if (xbits.is_inf() || ybits.is_zero()) {
+    raise_except_if_required(FE_INVALID);
+    set_errno_if_required(EDOM);
     return FPBits<T>::quiet_nan().get_val();
+  }
 
   if (xbits.is_zero()) {
     q = 0;

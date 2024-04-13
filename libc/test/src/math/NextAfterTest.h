@@ -16,6 +16,7 @@
 #include "src/__support/FPUtil/FPBits.h"
 #include "test/UnitTest/FPMatcher.h"
 #include "test/UnitTest/Test.h"
+#include <fenv.h>
 
 template <typename T>
 class NextAfterTestTemplate : public LIBC_NAMESPACE::testing::Test {
@@ -133,9 +134,13 @@ public:
     x = LIBC_NAMESPACE::cpp::bit_cast<T>(max_normal);
     result = func(x, inf);
     ASSERT_FP_EQ(result, inf);
+    ASSERT_FP_EXCEPTION(FE_INEXACT);
+    ASSERT_FP_EXCEPTION(FE_OVERFLOW);
 
     result = func(-x, -inf);
     ASSERT_FP_EQ(result, -inf);
+    ASSERT_FP_EXCEPTION(FE_INEXACT);
+    ASSERT_FP_EXCEPTION(FE_OVERFLOW);
 
     // 'from' is infinity.
     x = inf;

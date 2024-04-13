@@ -36,14 +36,32 @@ public:
     y = T(1.0);
     x = inf;
     EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
     x = neg_inf;
     EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
 
     x = T(1.0);
     y = zero;
     EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
     y = neg_zero;
     EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
+
+    x = inf;
+    y = nan;
+    EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_MATH_ERRNO(0);
+
+    x = nan;
+    y = zero;
+    EXPECT_FP_EQ(nan, func(x, y, &quotient));
+    ASSERT_MATH_ERRNO(0);
 
     y = nan;
     x = T(1.0);
