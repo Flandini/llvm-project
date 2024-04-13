@@ -174,6 +174,26 @@ template <typename T> struct FPTest : public Test {
     }                                                                          \
   } while (0)
 
+#define EXPECT_FP_EQ_NO_ERRNO_EXCEPTION(expected_val, actual_val)              \
+  do {                                                                         \
+    LIBC_NAMESPACE::fputil::clear_except(FE_ALL_EXCEPT);                       \
+    EXPECT_FP_EQ((expected_val), (actual_val));                                \
+    if (math_errhandling & MATH_ERREXCEPT) {                                   \
+      EXPECT_EQ(LIBC_NAMESPACE::fputil::test_except(FE_ALL_EXCEPT), 0);        \
+    }                                                                          \
+    EXPECT_MATH_ERRNO(0);                                                      \
+  } while (0)
+
+#define ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(expected_val, actual_val)              \
+  do {                                                                         \
+    LIBC_NAMESPACE::fputil::clear_except(FE_ALL_EXCEPT);                       \
+    ASSERT_FP_EQ((expected_val), (actual_val));                                \
+    if (math_errhandling & MATH_ERREXCEPT) {                                   \
+      ASSERT_EQ(LIBC_NAMESPACE::fputil::test_except(FE_ALL_EXCEPT), 0);        \
+    }                                                                          \
+    ASSERT_MATH_ERRNO(0);                                                      \
+  } while (0)
+
 #define EXPECT_FP_EQ_WITH_EXCEPTION(expected_val, actual_val, expected_except) \
   do {                                                                         \
     LIBC_NAMESPACE::fputil::clear_except(FE_ALL_EXCEPT);                       \

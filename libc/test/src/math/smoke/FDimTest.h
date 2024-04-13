@@ -25,36 +25,36 @@ public:
   const T nan = FPBits::quiet_nan().get_val();
 
   void test_nan_arg(FuncPtr func) {
-    EXPECT_FP_EQ(nan, func(nan, inf));
-    EXPECT_FP_EQ(nan, func(neg_inf, nan));
-    EXPECT_FP_EQ(nan, func(nan, zero));
-    EXPECT_FP_EQ(nan, func(neg_zero, nan));
-    EXPECT_FP_EQ(nan, func(nan, T(-1.2345)));
-    EXPECT_FP_EQ(nan, func(T(1.2345), nan));
-    EXPECT_FP_EQ(func(nan, nan), nan);
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(neg_inf, nan));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(neg_zero, nan));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, T(-1.2345)));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(T(1.2345), nan));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(func(nan, nan), nan);
   }
 
   void test_inf_arg(FuncPtr func) {
-    EXPECT_FP_EQ(zero, func(neg_inf, inf));
-    EXPECT_FP_EQ(inf, func(inf, zero));
-    EXPECT_FP_EQ(zero, func(neg_zero, inf));
-    EXPECT_FP_EQ(inf, func(inf, T(1.2345)));
-    EXPECT_FP_EQ(zero, func(T(-1.2345), inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_inf, inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(inf, func(inf, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_zero, inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(inf, func(inf, T(1.2345)));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(T(-1.2345), inf));
   }
 
   void test_neg_inf_arg(FuncPtr func) {
-    EXPECT_FP_EQ(inf, func(inf, neg_inf));
-    EXPECT_FP_EQ(zero, func(neg_inf, zero));
-    EXPECT_FP_EQ(inf, func(neg_zero, neg_inf));
-    EXPECT_FP_EQ(zero, func(neg_inf, T(-1.2345)));
-    EXPECT_FP_EQ(inf, func(T(1.2345), neg_inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(inf, func(inf, neg_inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_inf, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(inf, func(neg_zero, neg_inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_inf, T(-1.2345)));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(inf, func(T(1.2345), neg_inf));
   }
 
   void test_both_zero(FuncPtr func) {
-    EXPECT_FP_EQ(zero, func(zero, zero));
-    EXPECT_FP_EQ(zero, func(zero, neg_zero));
-    EXPECT_FP_EQ(zero, func(neg_zero, zero));
-    EXPECT_FP_EQ(zero, func(neg_zero, neg_zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(zero, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(zero, neg_zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_zero, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_zero, neg_zero));
   }
 
   void test_in_range(FuncPtr func) {
