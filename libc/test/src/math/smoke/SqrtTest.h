@@ -25,13 +25,21 @@ public:
   void test_special_numbers(SqrtFunc func) {
     ASSERT_FP_EQ(aNaN, func(aNaN));
     ASSERT_FP_EQ(inf, func(inf));
-    ASSERT_FP_EQ(aNaN, func(neg_inf));
+
     ASSERT_FP_EQ(0.0, func(0.0));
     ASSERT_FP_EQ(-0.0, func(-0.0));
-    ASSERT_FP_EQ(aNaN, func(T(-1.0)));
+
     ASSERT_FP_EQ(T(1.0), func(T(1.0)));
     ASSERT_FP_EQ(T(2.0), func(T(4.0)));
     ASSERT_FP_EQ(T(3.0), func(T(9.0)));
+
+    ASSERT_FP_EQ(aNaN, func(T(-1.0)));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
+
+    ASSERT_FP_EQ(aNaN, func(neg_inf));
+    ASSERT_FP_EXCEPTION(FE_INVALID);
+    ASSERT_MATH_ERRNO(EDOM);
   }
 };
 

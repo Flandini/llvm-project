@@ -15,6 +15,7 @@
 #include "src/__support/FPUtil/FEnvImpl.h"
 #include "src/__support/FPUtil/FPBits.h"
 #include "src/__support/FPUtil/rounding_mode.h"
+#include "src/__support/macros/optimization.h" // LIBC_UNLIKELY
 #include "src/__support/common.h"
 #include "src/__support/uint128.h"
 
@@ -22,6 +23,14 @@ namespace LIBC_NAMESPACE {
 namespace fputil {
 
 namespace internal {
+
+template <typename T>
+LIBC_INLINE cpp::enable_if_t<cpp::is_floating_point_v<T>, void>
+set_errno_if_negative(const T x) {
+  if (LIBC_UNLIKELY(x < 0)) {
+    set_errno_if_required(EDOM);
+  }
+}
 
 template <typename T> struct SpecialLongDouble {
   static constexpr bool VALUE = false;
@@ -86,9 +95,11 @@ LIBC_INLINE cpp::enable_if_t<cpp::is_floating_point_v<T>, T> sqrt(T x) {
       // sqrt(NaN) = NaN
       // sqrt(-NaN) = -NaN
       return x;
-    } else if (bits.is_neg()) {
+    } else if (LIBC_UNLIKELY(bits.is_neg())) {
       // sqrt(-Inf) = NaN
       // sqrt(-x) = NaN
+      raise_except_if_required(FE_INVALID);
+      set_errno_if_required(EDOM);
       return FLT_NAN;
     } else {
       int x_exp = bits.get_exponent();

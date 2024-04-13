@@ -29,8 +29,14 @@ public:
     ASSERT_FP_EQ(aNaN, func(aNaN));
     ASSERT_FP_EQ(inf, func(inf));
     ASSERT_FP_EQ(inf, func(neg_inf));
+
     ASSERT_FP_EQ(neg_inf, func(0.0));
+    ASSERT_FP_EXCEPTION(FE_DIVBYZERO);
+    ASSERT_MATH_ERRNO(ERANGE);
+
     ASSERT_FP_EQ(neg_inf, func(-0.0));
+    ASSERT_FP_EXCEPTION(FE_DIVBYZERO);
+    ASSERT_MATH_ERRNO(ERANGE);
   }
 
   void testPowersOfTwo(LogbFunc func) {

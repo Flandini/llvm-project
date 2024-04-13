@@ -14,6 +14,7 @@
 #include "src/__support/FPUtil/FPBits.h"
 #include "src/__support/FPUtil/rounding_mode.h"
 #include "src/__support/common.h"
+#include "src/__support/macros/optimization.h" // LIBC_UNLIKELY
 #include "src/__support/uint128.h"
 
 namespace LIBC_NAMESPACE {
@@ -50,9 +51,11 @@ LIBC_INLINE long double sqrt(long double x) {
     // sqrt(NaN) = NaN
     // sqrt(-NaN) = -NaN
     return x;
-  } else if (bits.is_neg()) {
+  } else if (LIBC_UNLIKELY(bits.is_neg())) {
     // sqrt(-Inf) = NaN
     // sqrt(-x) = NaN
+    raise_except_if_required(FE_INVALID);
+    set_errno_if_required(EDOM);
     return LDNAN;
   } else {
     int x_exp = bits.get_explicit_exponent();

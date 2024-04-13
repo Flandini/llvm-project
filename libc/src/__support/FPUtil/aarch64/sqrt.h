@@ -16,19 +16,21 @@
 #error "Invalid include"
 #endif
 
-#include "src/__support/FPUtil/generic/sqrt.h"
+#include "src/__support/FPUtil/generic/sqrt.h" // set_errno_if_negative
 
 namespace LIBC_NAMESPACE {
 namespace fputil {
 
 template <> LIBC_INLINE float sqrt<float>(float x) {
   float y;
+  internal::set_errno_if_negative(x);
   __asm__ __volatile__("fsqrt %s0, %s1\n\t" : "=w"(y) : "w"(x));
   return y;
 }
 
 template <> LIBC_INLINE double sqrt<double>(double x) {
   double y;
+  internal::set_errno_if_negative(x);
   __asm__ __volatile__("fsqrt %d0, %d1\n\t" : "=w"(y) : "w"(x));
   return y;
 }
