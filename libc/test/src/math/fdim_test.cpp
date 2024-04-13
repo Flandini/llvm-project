@@ -14,20 +14,4 @@
 #include "test/UnitTest/FPMatcher.h"
 #include "test/UnitTest/Test.h"
 
-using LlvmLibcFDimTest = FDimTestTemplate<double>;
-
-TEST_F(LlvmLibcFDimTest, NaNArg_fdim) { test_na_n_arg(&LIBC_NAMESPACE::fdim); }
-
-TEST_F(LlvmLibcFDimTest, InfArg_fdim) { test_inf_arg(&LIBC_NAMESPACE::fdim); }
-
-TEST_F(LlvmLibcFDimTest, NegInfArg_fdim) {
-  test_neg_inf_arg(&LIBC_NAMESPACE::fdim);
-}
-
-TEST_F(LlvmLibcFDimTest, BothZero_fdim) {
-  test_both_zero(&LIBC_NAMESPACE::fdim);
-}
-
-TEST_F(LlvmLibcFDimTest, InDoubleRange_fdim) {
-  test_in_range(&LIBC_NAMESPACE::fdim);
-}
+LIST_FDIM_TESTS(double, LIBC_NAMESPACE::fdim);

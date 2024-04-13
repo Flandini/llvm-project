@@ -16,23 +16,17 @@ template <typename T>
 class FDimTestTemplate : public LIBC_NAMESPACE::testing::Test {
 public:
   using FuncPtr = T (*)(T, T);
-  using FPBits = LIBC_NAMESPACE::fputil::FPBits<T>;
-  using StorageType = typename FPBits::StorageType;
 
-  const T inf = FPBits::inf(Sign::POS).get_val();
-  const T neg_inf = FPBits::inf(Sign::NEG).get_val();
-  const T zero = FPBits::zero(Sign::POS).get_val();
-  const T neg_zero = FPBits::zero(Sign::NEG).get_val();
-  const T nan = FPBits::quiet_nan().get_val();
+  DECLARE_SPECIAL_CONSTANTS(T)
 
-  void test_na_n_arg(FuncPtr func) {
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, inf));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(neg_inf, nan));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, zero));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(neg_zero, nan));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(nan, T(-1.2345)));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(nan, func(T(1.2345), nan));
-    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(func(nan, nan), nan);
+  void test_nan_arg(FuncPtr func) {
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(aNaN, inf));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(neg_inf, aNaN));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(aNaN, zero));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(neg_zero, aNaN));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(aNaN, T(-1.2345)));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(aNaN, func(T(1.2345), aNaN));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(func(aNaN, aNaN), aNaN);
   }
 
   void test_inf_arg(FuncPtr func) {
@@ -59,6 +53,17 @@ public:
     ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_zero, neg_zero));
   }
 
+  void test_special(FuncPtr func) {
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_max_normal, neg_min_denormal));
+
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(max_normal, min_denormal));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(max_normal, max_denormal));
+
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(max_normal, neg_min_denormal));
+
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_max_normal, neg_min_denormal));
+    ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_max_normal, max_denormal));
+  }
 
   void test_in_range(FuncPtr func) {
     constexpr StorageType STORAGE_MAX =
@@ -81,3 +86,13 @@ public:
     }
   }
 };
+
+#define LIST_FDIM_TESTS(T, func)                                               \
+  using LlvmLibcFDimTest = FDimTestTemplate<T>;                                \
+  TEST_F(LlvmLibcFDimTest, NaNArg) { test_nan_arg(&func); }                    \
+  TEST_F(LlvmLibcFDimTest, InfArg) { test_inf_arg(&func); }                    \
+  TEST_F(LlvmLibcFDimTest, NegInfArg) { test_neg_inf_arg(&func); }             \
+  TEST_F(LlvmLibcFDimTest, BothZero) { test_both_zero(&func); }                \
+  TEST_F(LlvmLibcFDimTest, InFloatRange) { test_in_range(&func); }             \
+  TEST_F(LlvmLibcFDimTest, TestSpecial) { test_special(&func); }               \
+  static_assert(true, "Require semicolon.")
