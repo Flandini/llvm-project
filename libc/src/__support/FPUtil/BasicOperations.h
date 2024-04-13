@@ -174,7 +174,11 @@ LIBC_INLINE T fdim(T x, T y) {
     return y;
   }
 
-  return (x > y ? x - y : 0);
+  if (x > y) {
+    return x - y;
+  } else {
+    return 0;
+  }
 }
 
 template <typename T, cpp::enable_if_t<cpp::is_floating_point_v<T>, int> = 0>

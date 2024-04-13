@@ -59,6 +59,7 @@ public:
     ASSERT_FP_EQ_NO_ERRNO_EXCEPTION(zero, func(neg_zero, neg_zero));
   }
 
+
   void test_in_range(FuncPtr func) {
     constexpr StorageType STORAGE_MAX =
         LIBC_NAMESPACE::cpp::numeric_limits<StorageType>::max();
