@@ -53,6 +53,8 @@ LIBC_INLINE long double sqrt(long double x) {
   } else if (bits.is_neg()) {
     // sqrt(-Inf) = NaN
     // sqrt(-x) = NaN
+    set_errno_if_required(EDOM);
+    set_except_if_required(FE_INVALID);
     return LDNAN;
   } else {
     int x_exp = bits.get_explicit_exponent();

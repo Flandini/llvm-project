@@ -16,7 +16,9 @@
 #include "src/__support/FPUtil/FPBits.h"
 #include "src/__support/FPUtil/rounding_mode.h"
 #include "src/__support/common.h"
+#include "src/__support/macros/optimization.h"
 #include "src/__support/uint128.h"
+#include <fenv.h>
 
 namespace LIBC_NAMESPACE {
 namespace fputil {
@@ -32,6 +34,29 @@ template <> struct SpecialLongDouble<long double> {
   static constexpr bool VALUE = true;
 };
 #endif // LIBC_TYPES_LONG_DOUBLE_IS_X86_FLOAT80
+
+template <typename T>
+LIBC_INLINE cpp::enable_if_t<cpp::is_floating_point_v<T>, bool>
+set_errno_if_less_than_zero(T x) {
+  FPBits<T> bitsx(x);
+  if (LIBC_UNLIKELY(bitsx.uintval() > FPBits<T>::zero(Sign::NEG).uintval())) {
+  // if (LIBC_UNLIKELY(bitsx.is_neg() && !bitsx.is_zero())) {
+    set_errno_if_required(EDOM);
+    set_except_if_required(FE_INVALID);
+    return true;
+  }
+  return false;
+}
+
+#define CHECK_LESS_THAN_ZERO(T, x)                                             \
+  do {                                                                         \
+    fputil::FPBits<T> bitsx(x);                                                \
+    if (LIBC_UNLIKELY(bitsx.is_neg() && !bitsx.is_zero())) {                   \
+      set_errno_if_required(EDOM);                                             \
+      set_except_if_required(FE_INVALID);                                      \
+      return FPBits::quiet_nan().get_val();                                    \
+    }                                                                          \
+  } while (0)
 
 template <typename T>
 LIBC_INLINE void normalize(int &exponent,
@@ -89,6 +114,8 @@ LIBC_INLINE cpp::enable_if_t<cpp::is_floating_point_v<T>, T> sqrt(T x) {
     } else if (bits.is_neg()) {
       // sqrt(-Inf) = NaN
       // sqrt(-x) = NaN
+      set_errno_if_required(EDOM);
+      set_except_if_required(FE_INVALID);
       return FLT_NAN;
     } else {
       int x_exp = bits.get_exponent();
