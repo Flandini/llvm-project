@@ -35,6 +35,8 @@
 namespace LIBC_NAMESPACE {
 namespace testing {
 
+using TestListenerType = TestLogger;
+
 // Only the following conditions are supported. Notice that we do not have
 // a TRUE or FALSE condition. That is because, C library functions do not
 // return boolean values, but use integral return values to indicate true or
@@ -51,6 +53,36 @@ struct MatcherBase {
 
 template <typename T> struct Matcher : public MatcherBase {
   bool match(const T &t);
+};
+
+class MatchResultListener {
+  TestListenerType *listener{nullptr};
+
+public:
+  explicit MatchResultListener(TestListenerType *listener)
+      : listener(listener) {}
+
+  template <typename T> MatchResultListener &operator<<(const T &msg) {
+    if (listener)
+      *listener << msg;
+    return *this;
+  }
+
+  bool IsInterested() const { return listener; }
+};
+
+// libc test matchers should subclass MatcherInterface<T>
+template <typename T> class MatcherInterface {
+public:
+  virtual ~MatcherInterface() = default;
+
+  virtual bool MatchAndExplain(T got,
+                               MatchResultListener *result_listener) const = 0;
+  virtual void DescribeTo(TestListenerType *os) const = 0;
+  virtual void DescribeNegationTo(TestListenerType *os) const {
+    os << "the following is not true: ";
+    DescribeTo(os);
+  }
 };
 
 namespace internal {

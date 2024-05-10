@@ -33,6 +33,7 @@
 // TODO: Migrate Pigweed to setting LIBC_COPT_TEST_USE_GTEST instead.
 #elif defined(LIBC_COPT_TEST_USE_GTEST) || defined(LIBC_COPT_TEST_USE_PIGWEED)
 #include "GTest.h"
+using TestListenerType = ::std::ostream;
 #else
 #include "LibcTest.h"
 #endif
