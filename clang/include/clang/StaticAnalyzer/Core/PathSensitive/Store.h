@@ -185,7 +185,8 @@ public:
   std::optional<const MemRegion *> castRegion(const MemRegion *region,
                                               QualType CastToTy);
 
-  virtual StoreRef removeDeadBindings(Store store, const StackFrameContext *LCtx,
+  virtual StoreRef removeDeadBindings(const ProgramStateRef State,
+                                      Store store, const StackFrameContext *LCtx,
                                       SymbolReaper &SymReaper) = 0;
 
   virtual bool includedInBindings(Store store,

@@ -2829,7 +2829,7 @@ void CStringChecker::checkDeadSymbols(SymbolReaper &SR,
   CStringLengthTy::Factory &F = state->get_context<CStringLength>();
   for (auto [Reg, Len] : Entries) {
     if (SymbolRef Sym = Len.getAsSymbol()) {
-      if (SR.isDead(Sym))
+      if (SR.isDead(state, Sym))
         Entries = F.remove(Entries, Reg);
     }
   }

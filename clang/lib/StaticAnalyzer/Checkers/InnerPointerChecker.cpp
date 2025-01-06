@@ -254,7 +254,7 @@ void InnerPointerChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   PtrSet::Factory &F = State->getStateManager().get_context<PtrSet>();
   RawPtrMapTy RPM = State->get<RawPtrMap>();
   for (const auto &Entry : RPM) {
-    if (!SymReaper.isLiveRegion(Entry.first)) {
+    if (!SymReaper.isLiveRegion(State, Entry.first)) {
       // Due to incomplete destructor support, some dead regions might
       // remain in the program state map. Clean them up.
       State = State->remove<RawPtrMap>(Entry.first);
@@ -262,7 +262,7 @@ void InnerPointerChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     if (const PtrSet *OldSet = State->get<RawPtrMap>(Entry.first)) {
       PtrSet CleanedUpSet = *OldSet;
       for (const auto Symbol : Entry.second) {
-        if (!SymReaper.isLive(Symbol))
+        if (!SymReaper.isLive(State, Symbol))
           CleanedUpSet = F.remove(CleanedUpSet, Symbol);
       }
       State = CleanedUpSet.isEmpty()

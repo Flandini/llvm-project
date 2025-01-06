@@ -1123,7 +1123,7 @@ void ObjCLoopChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   // Remove the dead symbols from the collection count map.
   ContainerCountMapTy Tracked = State->get<ContainerCountMap>();
   for (SymbolRef Sym : llvm::make_first_range(Tracked)) {
-    if (SymReaper.isDead(Sym)) {
+    if (SymReaper.isDead(State, Sym)) {
       State = State->remove<ContainerCountMap>(Sym);
       State = State->remove<ContainerNonEmptyMap>(Sym);
     }

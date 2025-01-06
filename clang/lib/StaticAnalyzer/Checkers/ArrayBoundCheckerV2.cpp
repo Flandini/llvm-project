@@ -574,7 +574,7 @@ void ArrayBoundCheckerV2::performCheck(const Expr *E, CheckerContext &C) const {
   StateUpdateReporter SUR(Reg, ByteOffset, E, C);
 
   // CHECK LOWER BOUND
-  const MemSpaceRegion *Space = Reg->getMemorySpace();
+  const MemSpaceRegion *Space = memspace::getMemSpace(State, Reg);
   if (!(isa<SymbolicRegion>(Reg) && isa<UnknownSpaceRegion>(Space))) {
     // A symbolic region in unknown space represents an unknown pointer that
     // may point into the middle of an array, so we don't look for underflows.

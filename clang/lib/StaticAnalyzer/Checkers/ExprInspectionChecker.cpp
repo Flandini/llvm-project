@@ -390,7 +390,7 @@ void ExprInspectionChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   const MarkedSymbolsTy &Syms = State->get<MarkedSymbols>();
   ExplodedNode *N = C.getPredecessor();
   for (SymbolRef Sym : Syms) {
-    if (!SymReaper.isDead(Sym))
+    if (!SymReaper.isDead(State, Sym))
       continue;
 
     // The non-fatal error node should be the same for all reports.
@@ -401,7 +401,7 @@ void ExprInspectionChecker::checkDeadSymbols(SymbolReaper &SymReaper,
 
   for (auto I : State->get<DenotedSymbols>()) {
     SymbolRef Sym = I.first;
-    if (!SymReaper.isLive(Sym))
+    if (!SymReaper.isLive(State, Sym))
       State = State->remove<DenotedSymbols>(Sym);
   }
 

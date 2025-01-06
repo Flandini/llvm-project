@@ -511,8 +511,8 @@ void FuchsiaHandleChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     // than the handle symbol we might produce spurious leak warnings (in case
     // we find out later from the status code that the handle allocation failed
     // in the first place).
-    if (!SymReaper.isDead(CurItem.first) ||
-        (ErrorSym && !SymReaper.isDead(ErrorSym)))
+    if (!SymReaper.isDead(State, CurItem.first) ||
+        (ErrorSym && !SymReaper.isDead(State, ErrorSym)))
       continue;
     if (CurItem.second.isAllocated() || CurItem.second.maybeAllocated())
       LeakedSyms.push_back(CurItem.first);

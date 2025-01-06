@@ -2498,7 +2498,7 @@ bool EquivalenceClass::isTrivial(ProgramStateRef State) const {
 
 bool EquivalenceClass::isTriviallyDead(ProgramStateRef State,
                                        SymbolReaper &Reaper) const {
-  return isTrivial(State) && Reaper.isDead(getRepresentativeSymbol());
+  return isTrivial(State) && Reaper.isDead(State, getRepresentativeSymbol());
 }
 
 inline ProgramStateRef EquivalenceClass::markDisequal(RangeSet::Factory &RF,
@@ -2975,7 +2975,7 @@ RangeConstraintManager::removeDeadBindings(ProgramStateRef State,
   for (std::pair<SymbolRef, EquivalenceClass> SymbolClassPair : Map) {
     SymbolRef Sym = SymbolClassPair.first;
 
-    if (SymReaper.isDead(Sym)) {
+    if (SymReaper.isDead(State, Sym)) {
       ClassMapChanged = true;
       NewMap = ClassFactory.remove(NewMap, Sym);
     }
@@ -2990,7 +2990,7 @@ RangeConstraintManager::removeDeadBindings(ProgramStateRef State,
     bool MembersChanged = false;
 
     for (SymbolRef Member : ClassMembersPair.second) {
-      if (SymReaper.isDead(Member)) {
+      if (SymReaper.isDead(State, Member)) {
         MembersChanged = true;
         LiveMembers = SetFactory.remove(LiveMembers, Member);
       }

@@ -539,7 +539,7 @@ void MacOSKeychainAPIChecker::checkDeadSymbols(SymbolReaper &SR,
   bool Changed = false;
   AllocationPairVec Errors;
   for (const auto &[Sym, AllocState] : AMap) {
-    if (!SR.isDead(Sym))
+    if (!SR.isDead(State, Sym))
       continue;
 
     Changed = true;

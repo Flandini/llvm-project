@@ -18,8 +18,10 @@
 #include "clang/AST/Type.h"
 #include "clang/Analysis/AnalysisDeclContext.h"
 #include "clang/Basic/LLVM.h"
+#include "clang/StaticAnalyzer/Checkers/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/APSIntPtr.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/StoreRef.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SymExpr.h"
 #include "llvm/ADT/DenseMap.h"
@@ -609,8 +611,8 @@ public:
   /// It might return null.
   const LocationContext *getLocationContext() const { return LCtx; }
 
-  bool isLive(SymbolRef sym);
-  bool isLiveRegion(const MemRegion *region);
+  bool isLive(const ProgramStateRef State, SymbolRef sym);
+  bool isLiveRegion(const ProgramStateRef State, const MemRegion *region);
   bool isLive(const Expr *ExprVal, const LocationContext *LCtx) const;
   bool isLive(const VarRegion *VR, bool includeStoreBindings = false) const;
 
@@ -638,8 +640,8 @@ public:
   ///
   /// This should only be called once all marking of dead symbols has completed.
   /// (For checkers, this means only in the checkDeadSymbols callback.)
-  bool isDead(SymbolRef sym) {
-    return !isLive(sym);
+  bool isDead(const ProgramStateRef State, SymbolRef sym) {
+    return !isLive(State, sym);
   }
 
   void markLive(const MemRegion *region);
@@ -655,7 +657,7 @@ private:
   // A readable region is a region that live or lazily copied.
   // Any symbols that refer to values in regions are alive if the region
   // is readable.
-  bool isReadableRegion(const MemRegion *region);
+  bool isReadableRegion(const ProgramStateRef State, const MemRegion *region);
 
   /// Mark the symbols dependent on the input symbol as live.
   void markDependentsLive(SymbolRef sym);

@@ -423,7 +423,7 @@ void SymbolReaper::markInUse(SymbolRef sym) {
     MetadataInUse.insert(sym);
 }
 
-bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
+bool SymbolReaper::isLiveRegion(const ProgramStateRef State, const MemRegion *MR) {
   // TODO: For now, liveness of a memory region is equivalent to liveness of its
   // base region. In fact we can do a bit better: say, if a particular FieldDecl
   // is not used later in the path, we can diagnose a leak of a value within
@@ -433,7 +433,7 @@ bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
     return true;
 
   if (const auto *SR = dyn_cast<SymbolicRegion>(MR))
-    return isLive(SR->getSymbol());
+    return isLive(State, SR->getSymbol());
 
   if (const auto *VR = dyn_cast<VarRegion>(MR))
     return isLive(VR, true);
@@ -442,7 +442,7 @@ bool SymbolReaper::isLiveRegion(const MemRegion *MR) {
   // tell if anything still refers to this region. Unlike SymbolicRegions,
   // AllocaRegions don't have associated symbols, though, so we don't actually
   // have a way to track their liveness.
-  return isa<AllocaRegion, CXXThisRegion, MemSpaceRegion, CodeTextRegion>(MR);
+  return isa<AllocaRegion, CXXThisRegion, CodeTextRegion>(MR) || memspace::hasMemSpace(State, MR);
 }
 
 bool SymbolReaper::isLazilyCopiedRegion(const MemRegion *MR) const {
@@ -450,11 +450,11 @@ bool SymbolReaper::isLazilyCopiedRegion(const MemRegion *MR) const {
   return LazilyCopiedRegionRoots.count(MR->getBaseRegion());
 }
 
-bool SymbolReaper::isReadableRegion(const MemRegion *MR) {
-  return isLiveRegion(MR) || isLazilyCopiedRegion(MR);
+bool SymbolReaper::isReadableRegion(const ProgramStateRef State, const MemRegion *MR) {
+  return isLiveRegion(State, MR) || isLazilyCopiedRegion(MR);
 }
 
-bool SymbolReaper::isLive(SymbolRef sym) {
+bool SymbolReaper::isLive(const ProgramStateRef State, SymbolRef sym) {
   if (TheLiving.count(sym)) {
     markDependentsLive(sym);
     return true;
@@ -464,38 +464,38 @@ bool SymbolReaper::isLive(SymbolRef sym) {
 
   switch (sym->getKind()) {
   case SymExpr::SymbolRegionValueKind:
-    KnownLive = isReadableRegion(cast<SymbolRegionValue>(sym)->getRegion());
+    KnownLive = isReadableRegion(State, cast<SymbolRegionValue>(sym)->getRegion());
     break;
   case SymExpr::SymbolConjuredKind:
     KnownLive = false;
     break;
   case SymExpr::SymbolDerivedKind:
-    KnownLive = isLive(cast<SymbolDerived>(sym)->getParentSymbol());
+    KnownLive = isLive(State, cast<SymbolDerived>(sym)->getParentSymbol());
     break;
   case SymExpr::SymbolExtentKind:
-    KnownLive = isLiveRegion(cast<SymbolExtent>(sym)->getRegion());
+    KnownLive = isLiveRegion(State, cast<SymbolExtent>(sym)->getRegion());
     break;
   case SymExpr::SymbolMetadataKind:
     KnownLive = MetadataInUse.count(sym) &&
-                isLiveRegion(cast<SymbolMetadata>(sym)->getRegion());
+        isLiveRegion(State, cast<SymbolMetadata>(sym)->getRegion());
     if (KnownLive)
       MetadataInUse.erase(sym);
     break;
   case SymExpr::SymIntExprKind:
-    KnownLive = isLive(cast<SymIntExpr>(sym)->getLHS());
+    KnownLive = isLive(State, cast<SymIntExpr>(sym)->getLHS());
     break;
   case SymExpr::IntSymExprKind:
-    KnownLive = isLive(cast<IntSymExpr>(sym)->getRHS());
+    KnownLive = isLive(State, cast<IntSymExpr>(sym)->getRHS());
     break;
   case SymExpr::SymSymExprKind:
-    KnownLive = isLive(cast<SymSymExpr>(sym)->getLHS()) &&
-                isLive(cast<SymSymExpr>(sym)->getRHS());
+    KnownLive = isLive(State, cast<SymSymExpr>(sym)->getLHS()) &&
+        isLive(State, cast<SymSymExpr>(sym)->getRHS());
     break;
   case SymExpr::SymbolCastKind:
-    KnownLive = isLive(cast<SymbolCast>(sym)->getOperand());
+    KnownLive = isLive(State, cast<SymbolCast>(sym)->getOperand());
     break;
   case SymExpr::UnarySymExprKind:
-    KnownLive = isLive(cast<UnarySymExpr>(sym)->getOperand());
+    KnownLive = isLive(State, cast<UnarySymExpr>(sym)->getOperand());
     break;
   }
 

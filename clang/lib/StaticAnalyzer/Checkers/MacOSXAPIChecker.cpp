@@ -75,9 +75,12 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
   if (!R)
     return;
 
+  const ProgramStateRef State = C.getState();
+
   // Global variables are fine.
+  // TODO: base region vs subregion handling in setting traits?
   const MemRegion *RB = R->getBaseRegion();
-  const MemSpaceRegion *RS = RB->getMemorySpace();
+  const MemSpaceRegion *RS = memspace::getMemSpace(State, RB);
   if (isa<GlobalsSpaceRegion>(RS))
     return;
 

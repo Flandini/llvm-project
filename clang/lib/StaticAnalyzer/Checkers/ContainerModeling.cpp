@@ -235,7 +235,7 @@ void ContainerModeling::checkDeadSymbols(SymbolReaper &SR,
 
   auto ContMap = State->get<ContainerMap>();
   for (const auto &Cont : ContMap) {
-    if (!SR.isLiveRegion(Cont.first)) {
+    if (!SR.isLiveRegion(State, Cont.first)) {
       // We must keep the container data while it has live iterators to be able
       // to compare them to the begin and the end of the container.
       if (!hasLiveIterators(State, Cont.first)) {

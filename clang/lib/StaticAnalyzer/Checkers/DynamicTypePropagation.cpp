@@ -235,7 +235,7 @@ void DynamicTypePropagation::checkDeadSymbols(SymbolReaper &SR,
   MostSpecializedTypeArgsMapTy TyArgMap =
       State->get<MostSpecializedTypeArgsMap>();
   for (SymbolRef Sym : llvm::make_first_range(TyArgMap)) {
-    if (SR.isDead(Sym)) {
+    if (SR.isDead(State, Sym)) {
       State = State->remove<MostSpecializedTypeArgsMap>(Sym);
     }
   }

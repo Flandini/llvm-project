@@ -210,7 +210,7 @@ public:
     auto &CZFactory = State->get_context<ConstraintSMT>();
 
     for (const auto &Entry : CZ) {
-      if (SymReaper.isDead(Entry.first))
+      if (SymReaper.isDead(State, Entry.first))
         CZ = CZFactory.remove(CZ, Entry);
     }
 

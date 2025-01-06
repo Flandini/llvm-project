@@ -61,6 +61,7 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Lex/Lexer.h"
 #include "clang/StaticAnalyzer/Checkers/BuiltinCheckerRegistration.h"
+#include "clang/StaticAnalyzer/Checkers/MemSpaces.h"
 #include "clang/StaticAnalyzer/Checkers/Taint.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/CommonBugCategories.h"
@@ -784,7 +785,7 @@ private:
                                              bool IsALeakCheck = false) const;
   ///@}
   static bool SummarizeValue(raw_ostream &os, SVal V);
-  static bool SummarizeRegion(raw_ostream &os, const MemRegion *MR);
+  static bool SummarizeRegion(raw_ostream &os, const ProgramStateRef State, const MemRegion *MR);
 
   void HandleNonHeapDealloc(CheckerContext &C, SVal ArgVal, SourceRange Range,
                             const Expr *DeallocExpr,
@@ -2202,7 +2203,7 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
     return nullptr;
   }
 
-  const MemSpaceRegion *MS = R->getMemorySpace();
+  const MemSpaceRegion *MS = memspace::getMemSpace(State, R);
 
   // Parameters, locals, statics, globals, and memory returned by
   // __builtin_alloca() shouldn't be freed.
@@ -2385,6 +2386,7 @@ bool MallocChecker::SummarizeValue(raw_ostream &os, SVal V) {
 }
 
 bool MallocChecker::SummarizeRegion(raw_ostream &os,
+                                    const ProgramStateRef State,
                                     const MemRegion *MR) {
   switch (MR->getKind()) {
   case MemRegion::FunctionCodeRegionKind: {
@@ -2403,7 +2405,7 @@ bool MallocChecker::SummarizeRegion(raw_ostream &os,
     os << "a block";
     return true;
   default: {
-    const MemSpaceRegion *MS = MR->getMemorySpace();
+    const MemSpaceRegion *MS = memspace::getMemSpace(State, MR);
 
     if (isa<StackLocalsSpaceRegion>(MS)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
@@ -2489,7 +2491,8 @@ void MallocChecker::HandleNonHeapDealloc(CheckerContext &C, SVal ArgVal,
       os << "deallocator";
 
     os << " is ";
-    bool Summarized = MR ? SummarizeRegion(os, MR)
+    const ProgramStateRef State = N->getState();
+    bool Summarized = MR ? SummarizeRegion(os, State, MR)
                          : SummarizeValue(os, ArgVal);
     if (Summarized)
       os << ", which is not memory allocated by ";

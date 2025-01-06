@@ -103,7 +103,8 @@ ProgramStateRef ProgramStateManager::removeDeadBindingsFromEnvironmentAndStore(
   NewState.Env = EnvMgr.removeDeadBindings(NewState.Env, SymReaper, state);
 
   // Clean up the store.
-  StoreRef newStore = StoreMgr->removeDeadBindings(NewState.getStore(), LCtx,
+  StoreRef newStore = StoreMgr->removeDeadBindings(getPersistentState(NewState),
+                                                   NewState.getStore(), LCtx,
                                                    SymReaper);
   NewState.setStore(newStore);
   SymReaper.setReapedStore(newStore);

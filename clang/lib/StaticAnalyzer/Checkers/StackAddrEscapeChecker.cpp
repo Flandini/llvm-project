@@ -288,9 +288,9 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
   EmitStackError(C, R, RetE);
 }
 
-static const MemSpaceRegion *getStackOrGlobalSpaceRegion(const MemRegion *R) {
+static const MemSpaceRegion *getStackOrGlobalSpaceRegion(const ProgramStateRef State, const MemRegion *R) {
   assert(R);
-  if (const auto *MemSpace = R->getMemorySpace()) {
+  if (const auto *MemSpace = memspace::getMemSpace(State, R)) {
     if (const auto *SSR = MemSpace->getAs<StackSpaceRegion>())
       return SSR;
     if (const auto *GSR = MemSpace->getAs<GlobalsSpaceRegion>())
@@ -300,7 +300,7 @@ static const MemSpaceRegion *getStackOrGlobalSpaceRegion(const MemRegion *R) {
   // referring to a field region of another symbolic region.
   if (const auto *SymReg = R->getBaseRegion()->getAs<SymbolicRegion>()) {
     if (const auto *OriginReg = SymReg->getSymbol()->getOriginRegion())
-      return getStackOrGlobalSpaceRegion(OriginReg);
+      return getStackOrGlobalSpaceRegion(State, OriginReg);
   }
   return nullptr;
 }
@@ -316,7 +316,7 @@ static const MemRegion *getOriginBaseRegion(const MemRegion *Reg) {
   return Reg;
 }
 
-static std::optional<std::string> printReferrer(const MemRegion *Referrer) {
+static std::optional<std::string> printReferrer(const ProgramStateRef State, const MemRegion *Referrer) {
   assert(Referrer);
   const StringRef ReferrerMemorySpace = [](const MemSpaceRegion *Space) {
     if (isa<StaticGlobalSpaceRegion>(Space))
@@ -326,7 +326,7 @@ static std::optional<std::string> printReferrer(const MemRegion *Referrer) {
     assert(isa<StackSpaceRegion>(Space));
     // This case covers top-level and inlined analyses.
     return "caller";
-  }(getStackOrGlobalSpaceRegion(Referrer));
+  }(getStackOrGlobalSpaceRegion(State, Referrer));
 
   while (!Referrer->canPrintPretty()) {
     if (const auto *SymReg = dyn_cast<SymbolicRegion>(Referrer);
@@ -517,7 +517,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       return;
     }
 
-    auto ReferrerVariable = printReferrer(Referrer);
+    auto ReferrerVariable = printReferrer(N->getState(), Referrer);
     if (!ReferrerVariable) {
       continue;
     }

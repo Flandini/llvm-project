@@ -685,7 +685,8 @@ public: // Part of public interface to class.
 
   /// removeDeadBindings - Scans the RegionStore of 'state' for dead values.
   ///  It returns a new Store with these values removed.
-  StoreRef removeDeadBindings(Store store, const StackFrameContext *LCtx,
+  StoreRef removeDeadBindings(const ProgramStateRef State,
+                              Store store, const StackFrameContext *LCtx,
                               SymbolReaper& SymReaper) override;
 
   //===------------------------------------------------------------------===//
@@ -827,7 +828,7 @@ public:
     }
   }
 
-  void VisitAddedToCluster(const MemRegion *baseR, const ClusterBindings &C) {}
+  void VisitAddedToCluster(const ProgramStateRef State, const MemRegion *baseR, const ClusterBindings &C) {}
   void VisitCluster(const MemRegion *baseR, const ClusterBindings *C) {}
 
   void VisitCluster(const MemRegion *BaseR, const ClusterBindings *C,
@@ -2843,7 +2844,7 @@ public:
       SymReaper(symReaper), CurrentLCtx(LCtx) {}
 
   // Called by ClusterAnalysis.
-  void VisitAddedToCluster(const MemRegion *baseR, const ClusterBindings &C);
+  void VisitAddedToCluster(const ProgramStateRef State, const MemRegion *baseR, const ClusterBindings &C);
   void VisitCluster(const MemRegion *baseR, const ClusterBindings *C);
   using ClusterAnalysis<RemoveDeadBindingsWorker>::VisitCluster;
 
@@ -2851,7 +2852,7 @@ public:
 
   bool AddToWorkList(const MemRegion *R);
 
-  bool UpdatePostponed();
+  bool UpdatePostponed(const ProgramStateRef State);
   void VisitBinding(SVal V);
 };
 }
@@ -2861,7 +2862,8 @@ bool RemoveDeadBindingsWorker::AddToWorkList(const MemRegion *R) {
   return AddToWorkList(WorkListElement(BaseR), getCluster(BaseR));
 }
 
-void RemoveDeadBindingsWorker::VisitAddedToCluster(const MemRegion *baseR,
+void RemoveDeadBindingsWorker::VisitAddedToCluster(const ProgramStateRef State,
+                                                   const MemRegion *baseR,
                                                    const ClusterBindings &C) {
 
   if (const VarRegion *VR = dyn_cast<VarRegion>(baseR)) {
@@ -2872,7 +2874,7 @@ void RemoveDeadBindingsWorker::VisitAddedToCluster(const MemRegion *baseR,
   }
 
   if (const SymbolicRegion *SR = dyn_cast<SymbolicRegion>(baseR)) {
-    if (SymReaper.isLive(SR->getSymbol()))
+    if (SymReaper.isLive(State, SR->getSymbol()))
       AddToWorkList(SR, &C);
     else
       Postponed.push_back(SR);
@@ -2948,13 +2950,13 @@ void RemoveDeadBindingsWorker::VisitBinding(SVal V) {
     SymReaper.markLive(Sym);
 }
 
-bool RemoveDeadBindingsWorker::UpdatePostponed() {
+bool RemoveDeadBindingsWorker::UpdatePostponed(const ProgramStateRef State) {
   // See if any postponed SymbolicRegions are actually live now, after
   // having done a scan.
   bool Changed = false;
 
   for (const SymbolicRegion *SR : Postponed) {
-    if (SymReaper.isLive(SR->getSymbol())) {
+    if (SymReaper.isLive(State, SR->getSymbol())) {
       Changed |= AddToWorkList(SR);
       SR = nullptr;
     }
@@ -2963,7 +2965,8 @@ bool RemoveDeadBindingsWorker::UpdatePostponed() {
   return Changed;
 }
 
-StoreRef RegionStoreManager::removeDeadBindings(Store store,
+StoreRef RegionStoreManager::removeDeadBindings(const ProgramStateRef State,
+                                                Store store,
                                                 const StackFrameContext *LCtx,
                                                 SymbolReaper& SymReaper) {
   RegionBindingsRef B = getRegionBindings(store);
@@ -2975,7 +2978,7 @@ StoreRef RegionStoreManager::removeDeadBindings(Store store,
     W.AddToWorkList(Reg);
   }
 
-  do W.RunWorkList(); while (W.UpdatePostponed());
+  do W.RunWorkList(); while (W.UpdatePostponed(State));
 
   // We have now scanned the store, marking reachable regions and symbols
   // as live.  We now remove all the regions that are dead from the store

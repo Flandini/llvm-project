@@ -155,18 +155,20 @@ ProgramStateRef setClassObjectDynamicTypeInfo(ProgramStateRef State,
                                        DynamicTypeInfo(NewTy, CanBeSubClassed));
 }
 
-static bool isLive(SymbolReaper &SR, const MemRegion *MR) {
-  return SR.isLiveRegion(MR);
+static bool isLive(const ProgramStateRef State, SymbolReaper &SR, const MemRegion *MR) {
+  return SR.isLiveRegion(State, MR);
 }
 
-static bool isLive(SymbolReaper &SR, SymbolRef Sym) { return SR.isLive(Sym); }
+static bool isLive(const ProgramStateRef State, SymbolReaper &SR, SymbolRef Sym) {
+  return SR.isLive(State, Sym);
+}
 
 template <typename MapTy>
 static ProgramStateRef removeDeadImpl(ProgramStateRef State, SymbolReaper &SR) {
   const auto &Map = State->get<MapTy>();
 
   for (const auto &Elem : Map)
-    if (!isLive(SR, Elem.first))
+    if (!isLive(State, SR, Elem.first))
       State = State->remove<MapTy>(Elem.first);
 
   return State;

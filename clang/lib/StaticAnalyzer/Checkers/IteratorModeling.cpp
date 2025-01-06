@@ -325,7 +325,7 @@ void IteratorModeling::checkDeadSymbols(SymbolReaper &SR,
 
   auto RegionMap = State->get<IteratorRegionMap>();
   for (const auto &Reg : RegionMap) {
-    if (!SR.isLiveRegion(Reg.first)) {
+    if (!SR.isLiveRegion(State, Reg.first)) {
       // The region behind the `LazyCompoundVal` is often cleaned up before
       // the `LazyCompoundVal` itself. If there are iterator positions keyed
       // by these regions their cleanup must be deferred.
@@ -337,7 +337,7 @@ void IteratorModeling::checkDeadSymbols(SymbolReaper &SR,
 
   auto SymbolMap = State->get<IteratorSymbolMap>();
   for (const auto &Sym : SymbolMap) {
-    if (!SR.isLive(Sym.first)) {
+    if (!SR.isLive(State, Sym.first)) {
       State = State->remove<IteratorSymbolMap>(Sym.first);
     }
   }
