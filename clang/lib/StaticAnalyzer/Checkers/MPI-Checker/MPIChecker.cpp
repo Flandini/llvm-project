@@ -110,7 +110,7 @@ void MPIChecker::checkMissingWaits(SymbolReaper &SymReaper,
 
   auto ReqMap = State->get<RequestMap>();
   for (const auto &Req : ReqMap) {
-    if (!SymReaper.isLiveRegion(Req.first)) {
+    if (!SymReaper.isLiveRegion(State, Req.first)) {
       if (Req.second.CurrentState == Request::State::Nonblocking) {
 
         if (!ErrorNode) {

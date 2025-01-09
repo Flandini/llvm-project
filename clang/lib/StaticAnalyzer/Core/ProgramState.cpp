@@ -618,9 +618,6 @@ bool ScanReachableSymbols::scan(SVal val) {
 }
 
 bool ScanReachableSymbols::scan(const MemRegion *R) {
-  if (isa<MemSpaceRegion>(R))
-    return true;
-
   bool wasVisited = !visited.insert(R).second;
   if (wasVisited)
     return true;
@@ -640,7 +637,7 @@ bool ScanReachableSymbols::scan(const MemRegion *R) {
       return false;
 
     // When we reach the topmost region, scan all symbols in it.
-    if (isa<MemSpaceRegion>(Super)) {
+    if (memspace::hasMemSpace(state, Super)) {
       StoreManager &StoreMgr = state->getStateManager().getStoreManager();
       if (!StoreMgr.scanReachableSymbols(state->getStore(), SR, *this))
         return false;

@@ -3066,7 +3066,7 @@ void MallocChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   RegionStateTy RS = OldRS;
   SmallVector<SymbolRef, 2> Errors;
   for (auto [Sym, State] : RS) {
-    if (SymReaper.isDead(Sym)) {
+    if (SymReaper.isDead(state, Sym)) {
       if (State.isAllocated() || State.isAllocatedOfSizeZero())
         Errors.push_back(Sym);
       // Remove the dead symbol from the map.
@@ -3086,7 +3086,7 @@ void MallocChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   // Cleanup the Realloc Pairs Map.
   ReallocPairsTy RP = state->get<ReallocPairs>();
   for (auto [Sym, ReallocPair] : RP) {
-    if (SymReaper.isDead(Sym) || SymReaper.isDead(ReallocPair.ReallocatedSym)) {
+    if (SymReaper.isDead(state, Sym) || SymReaper.isDead(state, ReallocPair.ReallocatedSym)) {
       state = state->remove<ReallocPairs>(Sym);
     }
   }
@@ -3094,7 +3094,7 @@ void MallocChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   // Cleanup the FreeReturnValue Map.
   FreeReturnValueTy FR = state->get<FreeReturnValue>();
   for (auto [Sym, RetSym] : FR) {
-    if (SymReaper.isDead(Sym) || SymReaper.isDead(RetSym)) {
+    if (SymReaper.isDead(state, Sym) || SymReaper.isDead(state, RetSym)) {
       state = state->remove<FreeReturnValue>(Sym);
     }
   }
