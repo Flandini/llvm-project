@@ -146,7 +146,7 @@ private:
   ProgramStateRef dropDeadFromGDM(SymbolReaper &SymReaper,
                                   ProgramStateRef State) const {
     for (const std::pair<SymbolRef, SymbolRef> &P : State->get<MapName>())
-      if (!SymReaper.isLive(P.first) || !SymReaper.isLive(P.second))
+      if (!SymReaper.isLive(State, P.first) || !SymReaper.isLive(State, P.second))
         State = State->remove<MapName>(P.first);
     return State;
   }

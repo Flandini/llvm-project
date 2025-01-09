@@ -2060,7 +2060,7 @@ void StreamChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   for (const auto &I : Map) {
     SymbolRef Sym = I.first;
     const StreamState &SS = I.second;
-    if (!SymReaper.isDead(Sym))
+    if (!SymReaper.isDead(State, Sym))
       continue;
     if (SS.isOpened())
       LeakedSyms.push_back(Sym);

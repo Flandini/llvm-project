@@ -1416,7 +1416,7 @@ void RetainCountChecker::checkDeadSymbols(SymbolReaper &SymReaper,
   // Update counts from autorelease pools
   for (const auto &I: state->get<RefBindings>()) {
     SymbolRef Sym = I.first;
-    if (SymReaper.isDead(Sym)) {
+    if (SymReaper.isDead(state, Sym)) {
       static CheckerProgramPointTag Tag(this, "DeadSymbolAutorelease");
       const RefVal &V = I.second;
       state = handleAutoreleaseCounts(state, Pred, &Tag, C, Sym, V);

@@ -672,13 +672,13 @@ void PthreadLockChecker::checkDeadSymbols(SymbolReaper &SymReaper,
     // Once the return value symbol dies, no more checks can be performed
     // against it. See if the return value was checked before this point.
     // This would remove the symbol from the map as well.
-    if (SymReaper.isDead(I.second))
+    if (SymReaper.isDead(State, I.second))
       State = resolvePossiblyDestroyedMutex(State, I.first, &I.second);
   }
 
   for (auto I : State->get<LockMap>()) {
     // Stop tracking dead mutex regions as well.
-    if (!SymReaper.isLiveRegion(I.first)) {
+    if (!SymReaper.isLiveRegion(State, I.first)) {
       State = State->remove<LockMap>(I.first);
       State = State->remove<DestroyRetVal>(I.first);
     }

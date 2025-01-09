@@ -502,7 +502,7 @@ void NullabilityChecker::checkDeadSymbols(SymbolReaper &SR,
   for (const MemRegion *Reg : llvm::make_first_range(Nullabilities)) {
     const auto *Region = Reg->getAs<SymbolicRegion>();
     assert(Region && "Non-symbolic region is tracked.");
-    if (SR.isDead(Region->getSymbol())) {
+    if (SR.isDead(State, Region->getSymbol())) {
       State = State->remove<NullabilityMap>(Reg);
     }
   }
@@ -512,7 +512,7 @@ void NullabilityChecker::checkDeadSymbols(SymbolReaper &SR,
   PropertyAccessesMapTy PropertyAccesses = State->get<PropertyAccessesMap>();
   for (ObjectPropPair PropKey : llvm::make_first_range(PropertyAccesses)) {
     const MemRegion *ReceiverRegion = PropKey.first;
-    if (!SR.isLiveRegion(ReceiverRegion)) {
+    if (!SR.isLiveRegion(State, ReceiverRegion)) {
       State = State->remove<PropertyAccessesMap>(PropKey);
     }
   }

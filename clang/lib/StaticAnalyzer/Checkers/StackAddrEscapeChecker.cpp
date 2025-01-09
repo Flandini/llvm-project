@@ -374,6 +374,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     return;
 
   ExplodedNode *Node = Ctx.getPredecessor();
+  ProgramStateRef State = Node->getState();
 
   bool ExitingTopFrame =
       Ctx.getPredecessor()->getLocationContext()->inTopFrame();
@@ -401,7 +402,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     /// referred by an other stack variable from different stack frame.
     bool checkForDanglingStackVariable(const MemRegion *Referrer,
                                        const MemRegion *Referred) {
-      const auto *ReferrerMemSpace = getStackOrGlobalSpaceRegion(Referrer);
+      const auto *ReferrerMemSpace = getStackOrGlobalSpaceRegion(State, Referrer);
       const auto *ReferredMemSpace =
           Referred->getMemorySpace()->getAs<StackSpaceRegion>();
 
@@ -466,7 +467,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
 
       // Check the globals for the same.
       if (!isa_and_nonnull<GlobalsSpaceRegion>(
-              getStackOrGlobalSpaceRegion(Region)))
+              getStackOrGlobalSpaceRegion(State, Region)))
         return true;
       if (VR && VR->hasStackStorage() && !isNotInCurrentFrame(VR, Ctx))
         V.emplace_back(Region, VR);
@@ -475,10 +476,8 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
   };
 
   CallBack Cb(Ctx, ExitingTopFrame);
-  ProgramStateRef State = Node->getState();
   State->getStateManager().getStoreManager().iterBindings(State->getStore(),
                                                           Cb);
-
   if (Cb.V.empty())
     return;
 
