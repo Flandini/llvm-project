@@ -60,11 +60,12 @@ ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
 const MemSpaceRegion *getMemSpace(ProgramStateRef State, const MemRegion *MR) {
   MR = canonicalizeMemRegion(MR);
 
+  const MemSpaceRegion *MS = MR->getMemorySpace();
+  if (!isa<UnknownSpaceRegion>(MS))
+    return MS;
+    
   const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
-  if (Result)
-    return *Result;
-
-  return MR->getMemorySpace();
+  return Result ? *Result : MS;
 }
 
 } // namespace memspace
