@@ -1544,7 +1544,7 @@ SVal RegionStoreManager::getBinding(RegionBindingsConstRef B, Loc L, QualType T)
   // The location does not have a bound value.  This means that it has
   // the value it had upon its creation and/or entry to the analyzed
   // function/method.  These are either symbolic values or 'undefined'.
-  if (R->hasStackNonParametersStorage()) {
+  if (R->hasRawStackNonParametersStorage()) {
     // All stack variables are considered to have undefined values
     // upon creation.  All heap allocated blocks are considered to
     // have undefined values as well unless they are explicitly bound
@@ -2175,7 +2175,7 @@ RegionStoreManager::getBindingForFieldOrElementCommon(RegionBindingsConstRef B,
     SR = dyn_cast<SubRegion>(Base);
   }
 
-  if (R->hasStackNonParametersStorage()) {
+  if (R->hasRawStackNonParametersStorage()) {
     if (isa<ElementRegion>(R)) {
       // Currently we don't reason specially about Clang-style vectors.  Check
       // if superR is a vector and if so return Unknown.

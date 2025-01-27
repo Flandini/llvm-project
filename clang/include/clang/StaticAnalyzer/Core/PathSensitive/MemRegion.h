@@ -160,9 +160,13 @@ public:
 
   [[nodiscard]] bool hasStackStorage(ProgramStateRef State) const;
 
-  bool hasStackNonParametersStorage() const;
+  bool hasRawStackNonParametersStorage() const;
 
-  bool hasStackParametersStorage() const;
+  [[nodiscard]] bool hasStackNonParametersStorage(ProgramStateRef State) const;
+
+  bool hasRawStackParametersStorage() const;
+
+  [[nodiscard]] bool hasStackParametersStorage(ProgramStateRef State) const;
 
   /// Compute the offset within the top level memory object.
   RegionOffset getAsOffset() const;

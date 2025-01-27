@@ -1399,12 +1399,20 @@ bool MemRegion::hasStackStorage(ProgramStateRef State) const {
   return isMemorySpace<StackSpaceRegion>(State); 
 }
 
-bool MemRegion::hasStackNonParametersStorage() const {
+bool MemRegion::hasRawStackNonParametersStorage() const {
   return isa<StackLocalsSpaceRegion>(getRawMemorySpace());
 }
 
-bool MemRegion::hasStackParametersStorage() const {
+bool MemRegion::hasStackNonParametersStorage(ProgramStateRef State) const {
+  return isMemorySpace<StackLocalsSpaceRegion>(State);
+}
+
+bool MemRegion::hasRawStackParametersStorage() const {
   return isa<StackArgumentsSpaceRegion>(getRawMemorySpace());
+}
+
+bool MemRegion::hasStackParametersStorage(ProgramStateRef State) const {
+  return isMemorySpace<StackArgumentsSpaceRegion>(State);
 }
 
 // Strips away all elements and fields.
