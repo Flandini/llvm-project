@@ -13,7 +13,6 @@
 
 #include "RetainCountDiagnostics.h"
 #include "RetainCountChecker.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include <optional>

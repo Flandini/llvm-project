@@ -72,7 +72,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerHelpers.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExplodedGraph.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"

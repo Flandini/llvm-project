@@ -21,7 +21,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 
 using namespace clang;
 using namespace ento;

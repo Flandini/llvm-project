@@ -21,7 +21,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerHelpers.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/DynamicExtent.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"

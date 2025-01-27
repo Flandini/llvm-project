@@ -53,7 +53,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/LoopUnrolling.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/LoopWidening.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/MemSpaces.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramStateTrait.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
