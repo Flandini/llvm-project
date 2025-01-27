@@ -165,10 +165,12 @@ public:
 
   [[nodiscard]] bool hasStackStorage(ProgramStateRef State) const;
 
+  /// @deprecated Use hasStackNonParametersStorage(ProgramStateRef) instead.
   bool hasRawStackNonParametersStorage() const;
 
   [[nodiscard]] bool hasStackNonParametersStorage(ProgramStateRef State) const;
 
+  /// @deprecated Use hasStackParametersStorage(ProgramStateRef) instead.
   bool hasRawStackParametersStorage() const;
 
   [[nodiscard]] bool hasStackParametersStorage(ProgramStateRef State) const;
