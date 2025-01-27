@@ -692,7 +692,7 @@ static AllocationInfo GetAllocationSite(ProgramStateManager &StateMgr,
       // Do not show local variables belonging to a function other than
       // where the error is reported.
       const StackSpaceRegion *SSR =
-          dyn_cast_if_present<StackSpaceRegion>(memspace::getMemSpace(St, R));
+          dyn_cast_if_present<StackSpaceRegion>(R->getMemSpace(St));
 
       if (SSR && SSR->getStackFrame() == LeakContext->getStackFrame())
         FirstBinding = R;

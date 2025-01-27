@@ -32,41 +32,6 @@ namespace clang {
 namespace ento {
 namespace memspace {
 
-// Canonicalize to base, in case of subregions, we don't want base regions and
-// subregions to have different memory spaces
-[[nodiscard]] static const MemRegion *
-canonicalizeMemRegion(const MemRegion *MR) {
-  return MR->getBaseRegion();
-}
-
-ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemRegion *MR,
-                                 const MemSpaceRegion *MS) {
-  MR = canonicalizeMemRegion(MR);
-
-  // For now, this should only be called to update the trait for memory regions
-  // that have an unknown memory spaces since we assume everywhere else that the
-  // memory space trait is set only for unknown memory spaces (setting this info
-  // otherwise would go unused).
-  assert(isa<UnknownSpaceRegion>(MR->getMemorySpace()));
-
-  // Shouldn't use the memory space trait to associate UnknownSpaceRegion with
-  // an already UnknownSpaceRegion
-  assert(!isa<UnknownSpaceRegion>(MS));
-
-  ProgramStateRef NewState = State->set<MemSpacesMap>(MR, MS);
-  return NewState;
-}
-
-const MemSpaceRegion *getMemSpace(ProgramStateRef State, const MemRegion *MR) {
-  MR = canonicalizeMemRegion(MR);
-
-  const MemSpaceRegion *MS = MR->getMemorySpace();
-  if (!isa<UnknownSpaceRegion>(MS))
-    return MS;
-    
-  const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
-  return Result ? *Result : MS;
-}
 
 } // namespace memspace
 } // namespace ento

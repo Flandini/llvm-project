@@ -202,7 +202,7 @@ static QualType parameterTypeFromSVal(SVal val, CheckerContext &C) {
     const MemRegion* R = X->getRegion();
     if (const VarRegion *VR = R->getAs<VarRegion>())
       if (const StackArgumentsSpaceRegion *
-          stackReg = dyn_cast<StackArgumentsSpaceRegion>(VR->getMemorySpace()))
+          stackReg = dyn_cast<StackArgumentsSpaceRegion>(VR->getRawMemorySpace()))
         if (stackReg->getStackFrame() == SFC)
           return VR->getValueType();
   }

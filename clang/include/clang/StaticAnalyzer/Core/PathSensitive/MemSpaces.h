@@ -29,18 +29,6 @@ class MemSpaceRegion;
 
 namespace memspace {
 
-[[nodiscard]] ProgramStateRef setMemSpaceTrait(ProgramStateRef State,
-                                               const MemRegion *MR,
-                                               const MemSpaceRegion *MS);
-
-[[nodiscard]] const MemSpaceRegion *getMemSpace(ProgramStateRef State,
-                                                const MemRegion *MR);
-
-template <typename FirstT, typename... RestT>
-[[nodiscard]] bool isMemSpace(ProgramStateRef State, const MemRegion *MR) {
-  return isa_and_nonnull<FirstT, RestT...>(getMemSpace(State, MR));
-}
-
 } // namespace memspace
 } // namespace ento
 } // namespace clang

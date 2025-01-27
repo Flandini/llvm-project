@@ -412,7 +412,7 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
   // because that's likely to be bad news.
   ProgramStateRef state = C.getState();
   const MemRegion *R = Call.getArgSVal(0).getAsRegion();
-  if (!R || !memspace::isMemSpace<StackSpaceRegion>(state, R))
+  if (!R || !R->isMemorySpace<StackSpaceRegion>(state))
     return;
 
   ExplodedNode *N = C.generateErrorNode(state);
@@ -428,7 +428,7 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
     os << " stack allocated memory";
   os << " for the \"control\" value.  Using such transient memory for "
   "the control value is potentially dangerous.";
-  if (isa<VarRegion>(R) && isa<StackLocalsSpaceRegion>(R->getMemorySpace()))
+  if (isa<VarRegion>(R) && isa<StackLocalsSpaceRegion>(R->getRawMemorySpace()))
     os << "  Perhaps you intended to declare the variable as 'static'?";
 
   auto report =

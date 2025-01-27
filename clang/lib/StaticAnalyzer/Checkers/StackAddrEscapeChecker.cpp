@@ -143,7 +143,7 @@ StackAddrEscapeChecker::getCapturedStackRegions(const BlockDataRegion &B,
   for (auto Var : B.referenced_vars()) {
     SVal Val = State->getSVal(Var.getCapturedRegion());
     const MemRegion *Region = Val.getAsRegion();
-    if (Region && memspace::isMemSpace<StackSpaceRegion>(State, Region))
+    if (Region && Region->isMemorySpace<StackSpaceRegion>(State))
       Regions.push_back(Region);
   }
   return Regions;
@@ -214,7 +214,7 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
 void StackAddrEscapeChecker::checkReturnedBlockCaptures(
     const BlockDataRegion &B, CheckerContext &C) const {
   for (const MemRegion *Region : getCapturedStackRegions(B, C)) {
-    if (isNotInCurrentFrame(Region->getMemorySpace(), C))
+    if (isNotInCurrentFrame(Region->getRawMemorySpace(), C))
       continue;
     ExplodedNode *N = C.generateNonFatalErrorNode();
     if (!N)
@@ -267,7 +267,7 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
   if (const BlockDataRegion *B = dyn_cast<BlockDataRegion>(R))
     checkReturnedBlockCaptures(*B, C);
 
-  const MemSpaceRegion *MS = memspace::getMemSpace(C.getState(), R);
+  const MemSpaceRegion *MS = R->getMemSpace(C.getState());
   if (!isa<StackSpaceRegion>(MS) || isNotInCurrentFrame(MS, C))
     return;
 
@@ -293,7 +293,7 @@ void StackAddrEscapeChecker::checkPreStmt(const ReturnStmt *RS,
 
 static const MemSpaceRegion *getStackOrGlobalSpaceRegion(const MemRegion *R) {
   assert(R);
-  if (const auto *MemSpace = R->getMemorySpace()) {
+  if (const auto *MemSpace = R->getRawMemorySpace()) {
     if (const auto *SSR = MemSpace->getAs<StackSpaceRegion>())
       return SSR;
     if (const auto *GSR = MemSpace->getAs<GlobalsSpaceRegion>())
@@ -406,7 +406,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
                                        const MemRegion *Referred) {
       const auto *ReferrerMemSpace = getStackOrGlobalSpaceRegion(Referrer);
       const auto *ReferredMemSpace =
-          Referred->getMemorySpace()->getAs<StackSpaceRegion>();
+          Referred->getRawMemorySpace()->getAs<StackSpaceRegion>();
 
       if (!ReferrerMemSpace || !ReferredMemSpace)
         return false;
@@ -471,8 +471,8 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       if (!isa_and_nonnull<GlobalsSpaceRegion>(
               getStackOrGlobalSpaceRegion(Region)))
         return true;
-      if (VR && VR->hasStackStorage() &&
-          !isNotInCurrentFrame(VR->getMemorySpace(), Ctx))
+      if (VR && VR->hasRawStackStorage() &&
+          !isNotInCurrentFrame(VR->getRawMemorySpace(), Ctx))
         V.emplace_back(Region, VR);
       return true;
     }
