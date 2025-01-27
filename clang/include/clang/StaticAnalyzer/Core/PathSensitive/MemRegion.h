@@ -120,21 +120,26 @@ public:
 
   virtual MemRegionManager &getMemRegionManager() const = 0;
 
-  /// Deprecated. Gets the 'raw' memory space of a memory region's base region. Deprecated
-  /// in favor of the memory space trait which maps memory regions to memory spaces, allowing
-  /// dynamic updating of a memory region's memory space. 
+  /// Deprecated. Gets the 'raw' memory space of a memory region's base region.
+  /// Deprecated in favor of the memory space trait which maps memory regions to
+  /// memory spaces, allowing dynamic updating of a memory region's memory
+  /// space.
   /// @deprecated Use getMemorySpace(ProgramStateRef) instead.
-  LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *getRawMemorySpace() const;
+  LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
+  getRawMemorySpace() const;
 
-  /// Returns the most specific memory space for this memory region in the given ProgramStateRef.
-  [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *getMemorySpace(ProgramStateRef State) const;
+  /// Returns the most specific memory space for this memory region in the given
+  /// ProgramStateRef.
+  [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
+  getMemorySpace(ProgramStateRef State) const;
 
   template <typename FirstT, typename... RestT>
   [[nodiscard]] bool isMemorySpace(ProgramStateRef State) const {
     return isa_and_nonnull<FirstT, RestT...>(getMemorySpace(State));
   }
 
-  [[nodiscard]] ProgramStateRef setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *MS) const;
+  [[nodiscard]] ProgramStateRef
+  setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *MS) const;
 
   LLVM_ATTRIBUTE_RETURNS_NONNULL const MemRegion *getBaseRegion() const;
 

@@ -30,9 +30,6 @@ REGISTER_MAP_WITH_PROGRAMSTATE(MemSpacesMap, const clang::ento::MemRegion *,
 
 namespace clang {
 namespace ento {
-namespace memspace {
-
-
-} // namespace memspace
+namespace memspace {} // namespace memspace
 } // namespace ento
 } // namespace clang

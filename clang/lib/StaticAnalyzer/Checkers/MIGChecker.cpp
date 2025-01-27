@@ -135,7 +135,7 @@ static const ParmVarDecl *getOriginParam(SVal V, CheckerContext &C,
   while (const MemRegion *MR = Sym->getOriginRegion()) {
     const auto *VR = dyn_cast<VarRegion>(MR);
     if (VR && VR->hasRawStackParametersStorage() &&
-           VR->getStackFrame()->inTopFrame())
+        VR->getStackFrame()->inTopFrame())
       return cast<ParmVarDecl>(VR->getDecl());
 
     const SymbolicRegion *SR = MR->getSymbolicBase();
