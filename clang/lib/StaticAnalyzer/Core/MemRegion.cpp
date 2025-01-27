@@ -1369,12 +1369,13 @@ const MemSpaceRegion *MemRegion::getMemorySpace(ProgramStateRef State) const {
   const MemSpaceRegion *MS = MR->getRawMemorySpace();
   if (!isa<UnknownSpaceRegion>(MS))
     return MS;
-    
+
   const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
   return Result ? *Result : MS;
 }
 
-ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *MS) const {
+ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State,
+                                            const MemSpaceRegion *MS) const {
   const MemRegion *MR = getBaseRegion();
 
   // For now, this should only be called to update the trait for memory regions
@@ -1395,8 +1396,8 @@ bool MemRegion::hasRawStackStorage() const {
   return isa<StackSpaceRegion>(getRawMemorySpace());
 }
 
-bool MemRegion::hasStackStorage(ProgramStateRef State) const { 
-  return isMemorySpace<StackSpaceRegion>(State); 
+bool MemRegion::hasStackStorage(ProgramStateRef State) const {
+  return isMemorySpace<StackSpaceRegion>(State);
 }
 
 bool MemRegion::hasRawStackNonParametersStorage() const {
