@@ -1392,14 +1392,6 @@ ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State,
   return NewState;
 }
 
-bool MemRegion::hasRawStackParametersStorage() const {
-  return isa<StackArgumentsSpaceRegion>(getRawMemorySpace());
-}
-
-bool MemRegion::hasStackParametersStorage(ProgramStateRef State) const {
-  return hasMemorySpace<StackArgumentsSpaceRegion>(State);
-}
-
 // Strips away all elements and fields.
 // Returns the base region of them.
 const MemRegion *MemRegion::getBaseRegion() const {

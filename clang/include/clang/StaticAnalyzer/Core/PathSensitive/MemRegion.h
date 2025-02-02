@@ -160,11 +160,6 @@ public:
   /// It might return null.
   const SymbolicRegion *getSymbolicBase() const;
 
-  /// @deprecated Use hasStackParametersStorage(ProgramStateRef) instead.
-  bool hasRawStackParametersStorage() const;
-
-  [[nodiscard]] bool hasStackParametersStorage(ProgramStateRef State) const;
-
   /// Compute the offset within the top level memory object.
   RegionOffset getAsOffset() const;
 

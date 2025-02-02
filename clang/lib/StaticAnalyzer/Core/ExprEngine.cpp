@@ -3518,7 +3518,7 @@ ProgramStateRef ExprEngine::processPointerEscapedOnBind(
 
     // Case (3).
     if (const auto *VR = dyn_cast<VarRegion>(MR->getBaseRegion()))
-      if (VR->hasRawStackParametersStorage() &&
+      if (VR->hasMemorySpace<StackArgumentsSpaceRegion>(State) &&
           VR->getStackFrame()->inTopFrame())
         if (const auto *RD = VR->getValueType()->getAsCXXRecordDecl())
           if (!RD->hasTrivialDestructor()) {
