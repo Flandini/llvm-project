@@ -472,7 +472,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       if (!isa_and_nonnull<GlobalsSpaceRegion>(
               getStackOrGlobalSpaceRegion(Region)))
         return true;
-      if (VR && VR->hasStackStorage(State) &&
+      if (VR && VR->hasMemorySpace<StackSpaceRegion>(State) &&
           !isNotInCurrentFrame(VR->getRawMemorySpace(), Ctx))
         V.emplace_back(Region, VR);
       return true;

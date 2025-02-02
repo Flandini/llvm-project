@@ -1392,10 +1392,6 @@ ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State,
   return NewState;
 }
 
-bool MemRegion::hasStackStorage(ProgramStateRef State) const {
-  return hasMemorySpace<StackSpaceRegion>(State);
-}
-
 bool MemRegion::hasRawStackNonParametersStorage() const {
   return isa<StackLocalsSpaceRegion>(getRawMemorySpace());
 }
