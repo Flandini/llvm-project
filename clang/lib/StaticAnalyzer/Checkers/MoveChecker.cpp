@@ -408,25 +408,25 @@ ExplodedNode *MoveChecker::tryToReportBug(const MemRegion *Region,
     // Creating the error message.
     llvm::SmallString<128> Str;
     llvm::raw_svector_ostream OS(Str);
-    ProgramStateRef ErrorNodeState = N->getState();
+    ProgramStateRef State = N->getState();
     switch(MK) {
       case MK_FunCall:
         OS << "Method called on moved-from object";
-        explainObject(ErrorNodeState, OS, Region, RD, MK);
+        explainObject(State, OS, Region, RD, MK);
         break;
       case MK_Copy:
         OS << "Moved-from object";
-        explainObject(ErrorNodeState, OS, Region, RD, MK);
+        explainObject(State, OS, Region, RD, MK);
         OS << " is copied";
         break;
       case MK_Move:
         OS << "Moved-from object";
-        explainObject(ErrorNodeState, OS, Region, RD, MK);
+        explainObject(State, OS, Region, RD, MK);
         OS << " is moved";
         break;
       case MK_Dereference:
         OS << "Dereference of null smart pointer";
-        explainObject(ErrorNodeState, OS, Region, RD, MK);
+        explainObject(State, OS, Region, RD, MK);
         break;
     }
 
