@@ -61,8 +61,8 @@ using namespace ento;
 
 #define DEBUG_TYPE "MemRegion"
 
-REGISTER_MAP_WITH_PROGRAMSTATE(MemSpacesMap, const clang::ento::MemRegion *,
-                               const clang::ento::MemSpaceRegion *)
+REGISTER_MAP_WITH_PROGRAMSTATE(MemSpacesMap, const MemRegion *,
+                               const MemSpaceRegion *)
 
 //===----------------------------------------------------------------------===//
 // MemRegion Construction.
