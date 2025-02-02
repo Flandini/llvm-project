@@ -45,8 +45,8 @@ void PutenvStackArrayChecker::checkPostCall(const CallEvent &Call,
   SVal ArgV = Call.getArgSVal(0);
   const Expr *ArgExpr = Call.getArgExpr(0);
 
-  const auto *SSR = dyn_cast<StackSpaceRegion>(
-      ArgV.getAsRegion()->getMemorySpace(C.getState()));
+  const auto *SSR =
+      ArgV.getAsRegion()->getMemorySpaceAs<StackSpaceRegion>(C.getState());
   if (!SSR)
     return;
   const auto *StackFrameFuncD =
