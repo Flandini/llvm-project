@@ -138,8 +138,10 @@ public:
     return isa<FirstT, RestT...>(getMemorySpace(State));
   }
 
+  /// Set the dynamically deduced memory space of a MemRegion that currently has
+  /// UnknownSpaceRegion. \p Space shouldn't be UnknownSpaceRegion.
   [[nodiscard]] ProgramStateRef
-  setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *MS) const;
+  setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *Space) const;
 
   LLVM_ATTRIBUTE_RETURNS_NONNULL const MemRegion *getBaseRegion() const;
 

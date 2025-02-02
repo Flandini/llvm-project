@@ -1366,30 +1366,24 @@ const MemSpaceRegion *MemRegion::getRawMemorySpace() const {
 const MemSpaceRegion *MemRegion::getMemorySpace(ProgramStateRef State) const {
   const MemRegion *MR = getBaseRegion();
 
-  const MemSpaceRegion *MS = MR->getRawMemorySpace();
-  if (!isa<UnknownSpaceRegion>(MS))
-    return MS;
+  const MemSpaceRegion *RawSpace = MR->getRawMemorySpace();
+  if (!isa<UnknownSpaceRegion>(RawSpace))
+    return RawSpace;
 
-  const MemSpaceRegion *const *Result = State->get<MemSpacesMap>(MR);
-  return Result ? *Result : MS;
+  const MemSpaceRegion *const *AssociatedSpace = State->get<MemSpacesMap>(MR);
+  return AssociatedSpace ? *AssociatedSpace : RawSpace;
 }
 
 ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State,
-                                            const MemSpaceRegion *MS) const {
-  const MemRegion *MR = getBaseRegion();
+                                            const MemSpaceRegion *Space) const {
+  const MemRegion *Base = getBaseRegion();
 
-  // For now, this should only be called to update the trait for memory regions
-  // that have an unknown memory spaces since we assume everywhere else that the
-  // memory space trait is set only for unknown memory spaces (setting this info
-  // otherwise would go unused).
-  assert(isa<UnknownSpaceRegion>(MR->getRawMemorySpace()));
+  // Shouldn't set unknown space.
+  assert(!isa<UnknownSpaceRegion>(Space));
 
-  // Shouldn't use the memory space trait to associate UnknownSpaceRegion with
-  // an already UnknownSpaceRegion
-  assert(!isa<UnknownSpaceRegion>(MS));
-
-  ProgramStateRef NewState = State->set<MemSpacesMap>(MR, MS);
-  return NewState;
+  // Currently, it we should have no accurate memspace for this region.
+  assert(isa<UnknownSpaceRegion>(Base->getMemorySpace(State)));
+  return State->set<MemSpacesMap>(Base, Space);
 }
 
 // Strips away all elements and fields.
