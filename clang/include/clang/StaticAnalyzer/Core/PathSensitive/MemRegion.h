@@ -121,15 +121,15 @@ public:
   virtual MemRegionManager &getMemRegionManager() const = 0;
 
   /// Deprecated. Gets the 'raw' memory space of a memory region's base region.
-  /// Deprecated in favor of the memory space trait which maps memory regions to
-  /// memory spaces, allowing dynamic updating of a memory region's memory
-  /// space.
-  /// @deprecated Use getMemorySpace(ProgramStateRef) instead.
+  /// If the MemRegion is originally associated with Unknown memspace, then the
+  /// State may have a more accurate memspace for this region.
+  /// Use getMemorySpace(ProgramStateRef) instead.
   LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getRawMemorySpace() const;
 
   /// Returns the most specific memory space for this memory region in the given
-  /// ProgramStateRef.
+  /// ProgramStateRef. We may infer a more accurate memory space for unknown
+  /// space regions and associate this in the State.
   [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getMemorySpace(ProgramStateRef State) const;
 
