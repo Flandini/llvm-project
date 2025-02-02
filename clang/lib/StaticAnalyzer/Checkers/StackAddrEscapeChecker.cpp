@@ -395,6 +395,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
   class CallBack : public StoreManager::BindingsHandler {
   private:
     CheckerContext &Ctx;
+    ProgramStateRef State;
     const StackFrameContext *PoppedFrame;
     const bool TopFrame;
 
@@ -454,7 +455,8 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     llvm::SmallPtrSet<const MemRegion *, 4> ExcludedRegions;
 
     CallBack(CheckerContext &CC, bool TopFrame)
-        : Ctx(CC), PoppedFrame(CC.getStackFrame()), TopFrame(TopFrame) {}
+        : Ctx(CC), State(CC.getState()), PoppedFrame(CC.getStackFrame()),
+          TopFrame(TopFrame) {}
 
     bool HandleBinding(StoreManager &SMgr, Store S, const MemRegion *Region,
                        SVal Val) override {
@@ -470,7 +472,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       if (!isa_and_nonnull<GlobalsSpaceRegion>(
               getStackOrGlobalSpaceRegion(Region)))
         return true;
-      if (VR && VR->hasRawStackStorage() &&
+      if (VR && VR->hasStackStorage(State) &&
           !isNotInCurrentFrame(VR->getRawMemorySpace(), Ctx))
         V.emplace_back(Region, VR);
       return true;
