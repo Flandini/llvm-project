@@ -127,11 +127,22 @@ public:
   [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getRawMemorySpace() const;
 
+  /// Deprecated. Use getMemorySpace(ProgramStateRef) instead.
+  template <class MemSpace>
+  [[nodiscard]] const MemSpace *getRawMemorySpaceAs() const {
+    return dyn_cast<MemSpace>(getRawMemorySpace());
+  }
+
   /// Returns the most specific memory space for this memory region in the given
   /// ProgramStateRef. We may infer a more accurate memory space for unknown
   /// space regions and associate this in the State.
   [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getMemorySpace(ProgramStateRef State) const;
+
+  template <class MemSpace>
+  [[nodiscard]] const MemSpace *getMemorySpaceAs(ProgramStateRef State) const {
+    return dyn_cast<MemSpace>(getMemorySpace(State));
+  }
 
   template <typename... MemorySpaces>
   [[nodiscard]] bool hasMemorySpace(ProgramStateRef State) const {

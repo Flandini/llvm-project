@@ -409,7 +409,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
       const auto *ReferrerMemSpace =
           getStackOrGlobalSpaceRegion(State, Referrer);
       const auto *ReferredMemSpace =
-          dyn_cast<StackSpaceRegion>(Referred->getMemorySpace(State));
+          Referred->getMemorySpaceAs<StackSpaceRegion>(State);
 
       if (!ReferrerMemSpace || !ReferredMemSpace)
         return false;

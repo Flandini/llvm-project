@@ -427,8 +427,7 @@ void UnixAPIMisuseChecker::CheckPthreadOnce(CheckerContext &C,
     os << " stack allocated memory";
   os << " for the \"control\" value.  Using such transient memory for "
   "the control value is potentially dangerous.";
-  if (isa<VarRegion>(R) &&
-      isa<StackLocalsSpaceRegion>(R->getMemorySpace(state)))
+  if (isa<VarRegion>(R) && R->hasMemorySpace<StackLocalsSpaceRegion>(state))
     os << "  Perhaps you intended to declare the variable as 'static'?";
 
   auto report =

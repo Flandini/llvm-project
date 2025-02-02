@@ -1382,7 +1382,7 @@ ProgramStateRef MemRegion::setMemorySpace(ProgramStateRef State,
   assert(!isa<UnknownSpaceRegion>(Space));
 
   // Currently, it we should have no accurate memspace for this region.
-  assert(isa<UnknownSpaceRegion>(Base->getMemorySpace(State)));
+  assert(Base->hasMemorySpace<UnknownSpaceRegion>(State));
   return State->set<MemSpacesMap>(Base, Space);
 }
 
