@@ -160,11 +160,6 @@ public:
   /// It might return null.
   const SymbolicRegion *getSymbolicBase() const;
 
-  /// @deprecated Use hasStackNonParametersStorage(ProgramStateRef) instead.
-  bool hasRawStackNonParametersStorage() const;
-
-  [[nodiscard]] bool hasStackNonParametersStorage(ProgramStateRef State) const;
-
   /// @deprecated Use hasStackParametersStorage(ProgramStateRef) instead.
   bool hasRawStackParametersStorage() const;
 
