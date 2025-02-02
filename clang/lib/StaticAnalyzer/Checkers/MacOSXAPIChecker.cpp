@@ -90,6 +90,8 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
       FName = TrimmedFName;
   }
 
+  const MemSpaceRegion *Space = RB->getMemorySpace(C.getState());
+
   SmallString<256> S;
   llvm::raw_svector_ostream os(S);
   bool SuggestStatic = false;
@@ -116,9 +118,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     if (IVR != R)
       os << " memory within";
     os << " the instance variable '" << IVR->getDecl()->getName() << '\'';
-  } else if (RB->hasMemorySpace<HeapSpaceRegion>(State)) {
+  } else if (isa<HeapSpaceRegion>(Space)) {
     os << " heap-allocated memory";
-  } else if (RB->hasMemorySpace<UnknownSpaceRegion>(State)) {
+  } else if (isa<UnknownSpaceRegion>(Space)) {
     // Presence of an IVar superregion has priority over this branch, because
     // ObjC objects are on the heap even if the core doesn't realize this.
     // Presence of a block variable base region has priority over this branch,
