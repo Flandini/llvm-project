@@ -1141,7 +1141,7 @@ void RetainCountChecker::checkBind(SVal loc, SVal val, const Stmt *S,
 
   // Find all symbols referenced by 'val' that we are tracking
   // and stop tracking them.
-  if (MR && shouldEscapeRegion(MR)) {
+  if (MR && shouldEscapeRegion(state, MR)) {
     state = state->scanReachableSymbols<StopTrackingCallback>(val).getState();
     C.addTransition(state);
   }
