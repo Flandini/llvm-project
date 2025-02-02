@@ -256,7 +256,7 @@ void ExprInspectionChecker::analyzerExplain(const CallExpr *CE,
     return;
 
   SVal V = C.getSVal(Arg);
-  SValExplainer Ex(C.getASTContext());
+  SValExplainer Ex(C.getASTContext(), C.getState());
   reportBug(Ex.Visit(V), C);
 }
 

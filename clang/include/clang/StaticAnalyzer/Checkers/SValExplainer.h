@@ -17,6 +17,7 @@
 
 #include "clang/AST/Attr.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SValVisitor.h"
 #include "llvm/ADT/StringExtras.h"
 
@@ -27,6 +28,7 @@ namespace ento {
 class SValExplainer : public FullSValVisitor<SValExplainer, std::string> {
 private:
   ASTContext &ACtx;
+  ProgramStateRef State;
 
   std::string printStmt(const Stmt *S) {
     std::string Str;
@@ -55,7 +57,8 @@ private:
   }
 
 public:
-  SValExplainer(ASTContext &Ctx) : ACtx(Ctx) {}
+  SValExplainer(ASTContext &Ctx, ProgramStateRef State)
+      : ACtx(Ctx), State(State) {}
 
   std::string VisitUnknownVal(UnknownVal V) {
     return "unknown value";
@@ -166,7 +169,7 @@ public:
             .getCanonicalType()->getAs<ObjCObjectPointerType>())
       return "object at " + Visit(R->getSymbol());
     // Other heap-based symbolic regions are also special.
-    if (isa<HeapSpaceRegion>(R->getRawMemorySpace()))
+    if (isa<HeapSpaceRegion>(R->getMemorySpace(State)))
       return "heap segment that starts at " + Visit(R->getSymbol());
     return "pointee of " + Visit(R->getSymbol());
   }
