@@ -76,8 +76,8 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     return;
 
   // Global variables are fine.
-  const MemRegion *RB = R->getBaseRegion();
-  if (RB->hasMemorySpace<GlobalsSpaceRegion>(C.getState()))
+  const MemSpaceRegion *Space = R->getMemorySpace(C.getState());
+  if (isa<GlobalsSpaceRegion>(Space))
     return;
 
   // Handle _dispatch_once.  In some versions of the OS X SDK we have the case
@@ -90,13 +90,11 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
       FName = TrimmedFName;
   }
 
-  const MemSpaceRegion *Space = RB->getMemorySpace(C.getState());
-
   SmallString<256> S;
   llvm::raw_svector_ostream os(S);
   bool SuggestStatic = false;
   os << "Call to '" << FName << "' uses";
-  if (const VarRegion *VR = dyn_cast<VarRegion>(RB)) {
+  if (const VarRegion *VR = dyn_cast<VarRegion>(R->getBaseRegion())) {
     const VarDecl *VD = VR->getDecl();
     // FIXME: These should have correct memory space and thus should be filtered
     // out earlier. This branch only fires when we're looking from a block,
