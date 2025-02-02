@@ -133,9 +133,10 @@ public:
   [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getMemorySpace(ProgramStateRef State) const;
 
-  template <typename FirstT, typename... RestT>
+  template <typename... MemorySpaces>
   [[nodiscard]] bool hasMemorySpace(ProgramStateRef State) const {
-    return isa<FirstT, RestT...>(getMemorySpace(State));
+    static_assert(sizeof...(MemorySpaces));
+    return isa<MemorySpaces...>(getMemorySpace(State));
   }
 
   /// Set the dynamically deduced memory space of a MemRegion that currently has
