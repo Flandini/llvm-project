@@ -124,7 +124,7 @@ public:
   /// If the MemRegion is originally associated with Unknown memspace, then the
   /// State may have a more accurate memspace for this region.
   /// Use getMemorySpace(ProgramStateRef) instead.
-  LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
+  [[nodiscard]] LLVM_ATTRIBUTE_RETURNS_NONNULL const MemSpaceRegion *
   getRawMemorySpace() const;
 
   /// Returns the most specific memory space for this memory region in the given
