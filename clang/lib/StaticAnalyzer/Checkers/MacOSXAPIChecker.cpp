@@ -75,11 +75,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
   if (!R)
     return;
 
-  ProgramStateRef State = C.getState();
-
   // Global variables are fine.
   const MemRegion *RB = R->getBaseRegion();
-  if (RB->hasMemorySpace<GlobalsSpaceRegion>(State))
+  if (RB->hasMemorySpace<GlobalsSpaceRegion>(C.getState()))
     return;
 
   // Handle _dispatch_once.  In some versions of the OS X SDK we have the case
