@@ -134,8 +134,8 @@ public:
   getMemorySpace(ProgramStateRef State) const;
 
   template <typename FirstT, typename... RestT>
-  [[nodiscard]] bool isMemorySpace(ProgramStateRef State) const {
-    return isa_and_nonnull<FirstT, RestT...>(getMemorySpace(State));
+  [[nodiscard]] bool hasMemorySpace(ProgramStateRef State) const {
+    return isa<FirstT, RestT...>(getMemorySpace(State));
   }
 
   [[nodiscard]] ProgramStateRef

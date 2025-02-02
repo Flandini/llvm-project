@@ -560,7 +560,7 @@ MoveChecker::classifyObject(ProgramStateRef State, const MemRegion *MR,
   MR = unwrapRValueReferenceIndirection(MR);
   bool IsLocal =
       isa_and_nonnull<VarRegion, CXXLifetimeExtendedObjectRegion>(MR) &&
-      MR->isMemorySpace<StackSpaceRegion>(State);
+      MR->hasMemorySpace<StackSpaceRegion>(State);
 
   if (!RD || !RD->getDeclContext()->isStdNamespace())
     return { IsLocal, SK_NonStd };

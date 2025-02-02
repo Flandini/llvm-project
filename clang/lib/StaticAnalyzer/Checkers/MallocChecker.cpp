@@ -2210,7 +2210,7 @@ MallocChecker::FreeMemAux(CheckerContext &C, const Expr *ArgExpr,
   // - The region has unknown memspace and no trait for further clarification
   //   (i.e., just unknown)
   // - The region has unknown memspace and a heap memspace trait
-  if (!R->isMemorySpace<HeapSpaceRegion, UnknownSpaceRegion>(State)) {
+  if (!R->hasMemorySpace<HeapSpaceRegion, UnknownSpaceRegion>(State)) {
     // Regions returned by malloc() are represented by SymbolicRegion objects
     // within HeapSpaceRegion. Of course, free() can work on memory allocated
     // outside the current function, so UnknownSpaceRegion is also a
@@ -2407,7 +2407,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
     os << "a block";
     return true;
   default: {
-    if (MR->isMemorySpace<StackLocalsSpaceRegion>(State)) {
+    if (MR->hasMemorySpace<StackLocalsSpaceRegion>(State)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2422,7 +2422,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
       return true;
     }
 
-    if (MR->isMemorySpace<StackArgumentsSpaceRegion>(State)) {
+    if (MR->hasMemorySpace<StackArgumentsSpaceRegion>(State)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)
@@ -2437,7 +2437,7 @@ bool MallocChecker::SummarizeRegion(ProgramStateRef State, raw_ostream &os,
       return true;
     }
 
-    if (MR->isMemorySpace<GlobalsSpaceRegion>(State)) {
+    if (MR->hasMemorySpace<GlobalsSpaceRegion>(State)) {
       const VarRegion *VR = dyn_cast<VarRegion>(MR);
       const VarDecl *VD;
       if (VR)

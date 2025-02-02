@@ -79,7 +79,7 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
 
   // Global variables are fine.
   const MemRegion *RB = R->getBaseRegion();
-  if (RB->isMemorySpace<GlobalsSpaceRegion>(State))
+  if (RB->hasMemorySpace<GlobalsSpaceRegion>(State))
     return;
 
   // Handle _dispatch_once.  In some versions of the OS X SDK we have the case
@@ -118,9 +118,9 @@ void MacOSXAPIChecker::CheckDispatchOnce(CheckerContext &C, const CallExpr *CE,
     if (IVR != R)
       os << " memory within";
     os << " the instance variable '" << IVR->getDecl()->getName() << '\'';
-  } else if (RB->isMemorySpace<HeapSpaceRegion>(State)) {
+  } else if (RB->hasMemorySpace<HeapSpaceRegion>(State)) {
     os << " heap-allocated memory";
-  } else if (RB->isMemorySpace<UnknownSpaceRegion>(State)) {
+  } else if (RB->hasMemorySpace<UnknownSpaceRegion>(State)) {
     // Presence of an IVar superregion has priority over this branch, because
     // ObjC objects are on the heap even if the core doesn't realize this.
     // Presence of a block variable base region has priority over this branch,
