@@ -1374,8 +1374,8 @@ const MemSpaceRegion *MemRegion::getMemorySpace(ProgramStateRef State) const {
   return AssociatedSpace ? *AssociatedSpace : RawSpace;
 }
 
-ProgramStateRef MemRegion::setMemSpaceTrait(ProgramStateRef State,
-                                            const MemSpaceRegion *Space) const {
+ProgramStateRef MemRegion::setMemorySpace(ProgramStateRef State,
+                                          const MemSpaceRegion *Space) const {
   const MemRegion *Base = getBaseRegion();
 
   // Shouldn't set unknown space.

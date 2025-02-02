@@ -141,7 +141,7 @@ public:
   /// Set the dynamically deduced memory space of a MemRegion that currently has
   /// UnknownSpaceRegion. \p Space shouldn't be UnknownSpaceRegion.
   [[nodiscard]] ProgramStateRef
-  setMemSpaceTrait(ProgramStateRef State, const MemSpaceRegion *Space) const;
+  setMemorySpace(ProgramStateRef State, const MemSpaceRegion *Space) const;
 
   LLVM_ATTRIBUTE_RETURNS_NONNULL const MemRegion *getBaseRegion() const;
 
