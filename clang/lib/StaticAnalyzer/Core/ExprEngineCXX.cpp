@@ -1069,7 +1069,8 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     // in the ILE
     if (AllocType->isAggregateType() && ILE->isSemanticForm()) {
       const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
-      for (auto [FD, InitExpr] : llvm::zip_equal(Record->fields(), ILE->children())) {
+      for (auto [FD, InitExpr] :
+           llvm::zip_equal(Record->fields(), ILE->children())) {
         SVal FieldLVal = State->getLValue(FD, Result);
         SVal InitSVal = State->getSVal(InitExpr, LCtx);
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
@@ -1086,7 +1087,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     assert(Bldr.getResults().size() == 1);
     Bldr.takeNodes(NewN);
     evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
-              /*FirstInit=*/IsStandardGlobalOpNewFunction);
+             /*FirstInit=*/IsStandardGlobalOpNewFunction);
   }
 }
 
