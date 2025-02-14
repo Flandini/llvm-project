@@ -1076,7 +1076,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
       }
       Bldr.takeNodes(NewN);
-      Bldr.generateNode(CNE, NewN, State);
+      Bldr.generateNode(CNE, NewN, State, nullptr, ProgramPoint::PostStoreKind);
       return;
     }
   }
