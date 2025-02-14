@@ -254,6 +254,95 @@ void foo() {
 }
 } // namespace CXX17_aggregate_construction
 
+namespace CXX17_newexpr_aggregate_init_list_initialization {
+struct S {
+  int foo;
+  int bar;
+};
+void none_designated() {
+  S *s = new S{13,1};
+  clang_analyzer_eval(s->foo); // expected-warning{{13}}
+  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  delete s;
+}
+void none_designated_swapped() {
+  S *s = new S{1,13};
+  clang_analyzer_eval(s->foo); // expected-warning{{1}}
+  clang_analyzer_eval(s->bar); // expected-warning{{13}}
+  delete s;
+}
+void one_designated_one_not() {
+  S *s = new S{ 1, .bar = 13 };
+  clang_analyzer_eval(s->foo); // expected-warning{{1}}
+  clang_analyzer_eval(s->bar); // expected-warning{{13}}
+  delete s;
+}
+void all_designated() {
+  S *s = new S{
+      .foo = 13,
+      .bar = 1,
+  };
+  clang_analyzer_eval(s->foo); // expected-warning{{13}}
+  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  delete s;
+}
+void out_of_order_designated_initializers() {
+  S *s = new S{
+      .bar = 1,
+      .foo = 13,
+  };
+  clang_analyzer_eval(s->foo); // expected-warning{{13}}
+  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  delete s;
+}
+
+struct WithGaps {
+  int foo;
+  int bar;
+  int baz;
+};
+void out_of_order_designated_initializers_with_gaps() {
+  WithGaps *s = new WithGaps{
+      .bar = 1,
+      .foo = 13,
+  };
+  clang_analyzer_eval(s->foo); // expected-warning{{13}}
+  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  clang_analyzer_eval(s->baz); // expected-warning{{0}}
+  delete s;
+}
+
+class PubClass {
+public:
+  int foo;
+  int bar;
+};
+void public_class_designated_initializers() {
+  S *s = new S{
+      .foo = 13,
+      .bar = 1,
+  };
+  clang_analyzer_eval(s->foo); // expected-warning{{13}}
+  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  delete s;
+}
+
+union UnionTestTy {
+  int x;
+  float y;
+};
+void new_expr_aggr_init_union_no_designator() {
+  UnionTestTy *u = new UnionTestTy{};
+  clang_analyzer_eval(u); // expected-warning{{0}}
+  delete u;
+}
+void new_expr_aggr_init_union_designated() {
+  UnionTestTy *u = new UnionTestTy{ .x = 14 };
+  clang_analyzer_eval(u); // expected-warning{{14}}
+  delete u;
+}
+} // namespace CXX17_newexpr_aggregate_init_list_initialization
+
 namespace CXX17_transparent_init_list_exprs {
 class A {};
 
