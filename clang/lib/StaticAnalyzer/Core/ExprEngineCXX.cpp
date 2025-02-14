@@ -1059,15 +1059,35 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   if (!NewN)
     return;
 
+  const Expr *Init = CNE->getInitializer();
+  if (!Init)
+    return;
+
+  if (const InitListExpr *ILE = dyn_cast<InitListExpr>(Init)) {
+    QualType AllocType = CNE->getAllocatedType();
+    // Semantic form of ILE means that all members have an initializer present
+    // in the ILE
+    if (AllocType->isAggregateType() && ILE->isSemanticForm()) {
+      const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
+      auto ZipIter = llvm::zip_equal(Record->fields(), ILE->children());
+      for (auto [FD, InitExpr] : ZipIter) {
+        SVal FieldLVal = State->getLValue(FD, Result);
+        SVal InitSVal = State->getSVal(InitExpr, LCtx);
+        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      }
+      Bldr.takeNodes(NewN);
+      Bldr.generateNode(CNE, NewN, State);
+      return;
+    }
+  }
+
   // If the type is not a record, we won't have a CXXConstructExpr as an
   // initializer. Copy the value over.
-  if (const Expr *Init = CNE->getInitializer()) {
-    if (!isa<CXXConstructExpr>(Init)) {
-      assert(Bldr.getResults().size() == 1);
-      Bldr.takeNodes(NewN);
-      evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
-               /*FirstInit=*/IsStandardGlobalOpNewFunction);
-    }
+  if (!isa<CXXConstructExpr>(Init)) {
+    assert(Bldr.getResults().size() == 1);
+    Bldr.takeNodes(NewN);
+    evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
+              /*FirstInit=*/IsStandardGlobalOpNewFunction);
   }
 }
 
