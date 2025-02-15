@@ -261,20 +261,20 @@ struct S {
 };
 void none_designated() {
   S *s = new S{13,1};
-  clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  clang_analyzer_eval(13 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(1 == s->bar); // expected-warning{{TRUE}}
   delete s;
 }
 void none_designated_swapped() {
   S *s = new S{1,13};
-  clang_analyzer_eval(s->foo); // expected-warning{{1}}
-  clang_analyzer_eval(s->bar); // expected-warning{{13}}
+  clang_analyzer_eval(1 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(13 == s->bar); // expected-warning{{TRUE}}
   delete s;
 }
 void one_designated_one_not() {
   S *s = new S{ 1, .bar = 13 };
-  clang_analyzer_eval(s->foo); // expected-warning{{1}}
-  clang_analyzer_eval(s->bar); // expected-warning{{13}}
+  clang_analyzer_eval(1 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(13 == s->bar); // expected-warning{{TRUE}}
   delete s;
 }
 void all_designated() {
@@ -282,16 +282,16 @@ void all_designated() {
       .foo = 13,
       .bar = 1,
   };
-  clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  clang_analyzer_eval(13 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(1 == s->bar); // expected-warning{{TRUE}}
   delete s;
 }
 void non_designated_array_of_aggr_struct() {
   S *s = new S[2] { {1, 2}, {3, 4} };
-  clang_analyzer_eval(s[0].foo); // expected-warning{{1}}
-  clang_analyzer_eval(s[0].bar); // expected-warning{{2}}
-  clang_analyzer_eval(s[1].foo); // expected-warning{{3}}
-  clang_analyzer_eval(s[1].bar); // expected-warning{{4}}
+  clang_analyzer_eval(1 == s[0].foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(2 == s[0].bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == s[1].foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(4 == s[1].bar); // expected-warning{{TRUE}}
   delete[] s;
 }
 
@@ -305,9 +305,9 @@ void out_of_order_designated_initializers_with_gaps() {
     .foo = 13,
     .baz = 1,
   };
-  clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{0}}
-  clang_analyzer_eval(s->baz); // expected-warning{{1}}
+  clang_analyzer_eval(13 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == s->bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(1 == s->baz); // expected-warning{{TRUE}}
   delete s;
 }
 
@@ -325,9 +325,9 @@ struct NonConsideredFields {
 };
 void considered_fields_initd() {
   auto S = new NonConsideredFields { 1, 2, 3 };
-  clang_analyzer_eval(S->i); // expected-warning{{1}}
-  clang_analyzer_eval(S->j); // expected-warning{{2}}
-  clang_analyzer_eval(S->k); // expected-warning{{3}}
+  clang_analyzer_eval(1 == S->i); // expected-warning{{TRUE}}
+  clang_analyzer_eval(2 == S->j); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == S->k); // expected-warning{{TRUE}}
   delete S;
 }
 
@@ -341,8 +341,8 @@ void public_class_designated_initializers() {
       .foo = 13,
       .bar = 1,
   };
-  clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{1}}
+  clang_analyzer_eval(13 == s->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(1 == s->bar); // expected-warning{{TRUE}}
   delete s;
 }
 
@@ -352,18 +352,18 @@ union UnionTestTy {
 };
 void new_expr_aggr_init_union_no_designator() {
   UnionTestTy *u = new UnionTestTy{};
-  clang_analyzer_eval(u->x); // expected-warning{{0}}
+  clang_analyzer_eval(0 == u->x); // expected-warning{{TRUE}}
   float z = u->y;
   delete u;
 }
 void new_expr_aggr_init_union_designated() {
   UnionTestTy *u = new UnionTestTy{ .x = 14 };
-  clang_analyzer_eval(u->x); // expected-warning{{14}}
+  clang_analyzer_eval(14 == u->x); // expected-warning{{TRUE}}
   delete u;
 }
 void new_expr_aggr_init_union_designated2() {
   UnionTestTy *u = new UnionTestTy{ .y = 3.14 };
-  clang_analyzer_eval(u->y); // expected-warning{{3.14}}
+  clang_analyzer_eval(3.14 == u->y); // expected-warning{{TRUE}}
   delete u;
 }
 
@@ -373,9 +373,13 @@ union UnionTestTyWithDefaultMemberInit {
 };
 void union_with_default_member_init_empty_init_list() {
   auto U = new UnionTestTyWithDefaultMemberInit{};
-  clang_analyzer_eval(U->y); // expected-warning{{6.55}}
+  clang_analyzer_eval(6.55 == U->y); // expected-warning{{TRUE}}
   float z = U->x;
   delete U;
+}
+
+void char_array_string_literal_init_char() {
+  auto somestring = new char[sizeof("hello,world")] { "hello,world" };
 }
 } // namespace CXX17_newexpr_aggregate_init_list_initialization
 
