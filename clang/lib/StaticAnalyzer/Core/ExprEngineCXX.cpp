@@ -1070,24 +1070,33 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     return;
 
   const InitListExpr *ILE = dyn_cast<InitListExpr>(Init);
-  // 2. There is no initializer, default construct
+  // 2. There is no initializer, default construct.
   if (!ILE)
     return;
 
-  // 3. There is a braced initializer list, do direct list initialization
+  // 3. There is a braced initializer list, do direct list initialization.
+  //    The below only handles cases where the clang AST for direct list
+  //    init isn't turned into something else like CXXConstructExpr in the
+  //    clang AST. E.g., the case where the list init contains only one 
+  //    element and that element is a derived type of the initialized
+  //    aggregate type gets turned into a CXXNewExpr(CXXConstructExpr, ...)
+  //    AST which is handled elsewhere though it is still technically 
+  //    direct list init.
   QualType AllocType = CNE->getAllocatedType();
 
-  const InitListExpr *SyntacticILE = ILE->getSyntacticForm();
-  bool IsDesignatedILE = SyntacticILE->hasDesignatedInit();
+  // The syntactic form is what is in source, the semantic form is
+  // transformed by clang into 'what it should be'
+  bool IsDesignatedILE = ILE->getSyntacticForm()->hasDesignatedInit();
+  size_t NumInitExprElements = ILE->getNumInits();
 
   // Aggregate initialization
-  if (IsDesignatedILE && AllocType->isAggregateType()) {
-    const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
+  if (IsDesignatedILE && AllocType->isAggregateType() && AllocType->isClassType()) {
+    const RecordDecl *Record = AllocType->getAsRecordDecl();
 
     // If it's a union and there is a designated init clause, then that one
     // field gets initialized.
     if (Record->isUnion()) {
-      assert(1 == std::distance(ILE->child_begin(), ILE->child_end()));
+      assert(1 == NumInitExprElements);
       const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
       SVal FieldLVal = State->getLValue(UnionField, Result);
       SVal InitSVal = State->getSVal(*ILE->child_begin(), LCtx);
@@ -1102,6 +1111,17 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
 
     Bldr.takeNodes(NewN);
     Bldr.generateNode(CNE, NewN, State);
+  }
+  else if (ILE->isStringLiteralInit()) {
+    // If the AllocType is some char type array and the init list contains
+    // exactly one string literal expression for the corresponding char type
+    const Stmt *ILEChild = *ILE->child_begin();
+    const StringLiteral *InitExpr = dyn_cast<StringLiteral *>(ILEChild);
+    if (!InitExpr)
+      return;
+  }
+  else if (AllocType->isAggregateType()) {
+
   }
 
   // Semantic form of ILE means that all members have an initializer present
