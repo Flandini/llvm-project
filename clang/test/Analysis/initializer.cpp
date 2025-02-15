@@ -286,14 +286,13 @@ void all_designated() {
   clang_analyzer_eval(s->bar); // expected-warning{{1}}
   delete s;
 }
-void out_of_order_designated_initializers() {
-  S *s = new S{
-      .bar = 1,
-      .foo = 13,
-  };
-  clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{1}}
-  delete s;
+void non_designated_array_of_aggr_struct() {
+  S *s = new S[2] { {1, 2}, {3, 4} };
+  clang_analyzer_eval(s[0].foo); // expected-warning{{1}}
+  clang_analyzer_eval(s[0].bar); // expected-warning{{2}}
+  clang_analyzer_eval(s[1].foo); // expected-warning{{3}}
+  clang_analyzer_eval(s[1].bar); // expected-warning{{4}}
+  delete[] s;
 }
 
 struct WithGaps {
@@ -303,13 +302,33 @@ struct WithGaps {
 };
 void out_of_order_designated_initializers_with_gaps() {
   WithGaps *s = new WithGaps{
-      .bar = 1,
-      .foo = 13,
+    .foo = 13,
+    .baz = 1,
   };
   clang_analyzer_eval(s->foo); // expected-warning{{13}}
-  clang_analyzer_eval(s->bar); // expected-warning{{1}}
-  clang_analyzer_eval(s->baz); // expected-warning{{0}}
+  clang_analyzer_eval(s->bar); // expected-warning{{0}}
+  clang_analyzer_eval(s->baz); // expected-warning{{1}}
   delete s;
+}
+
+// https://eel.is/c++draft/dcl.init.aggr#note-6: 
+// Static data members, non-static data members of anonymous 
+// union members, and unnamed bit-fields are not considered 
+// elements of the aggregate.
+struct NonConsideredFields {
+  int i;
+  static int s;
+  int j;
+  int :17;
+  union { int x; float y; };
+  int k;
+};
+void considered_fields_initd() {
+  auto S = new NonConsideredFields { 1, 2, 3 };
+  clang_analyzer_eval(S->i); // expected-warning{{1}}
+  clang_analyzer_eval(S->j); // expected-warning{{2}}
+  clang_analyzer_eval(S->k); // expected-warning{{3}}
+  delete S;
 }
 
 class PubClass {
@@ -333,13 +352,30 @@ union UnionTestTy {
 };
 void new_expr_aggr_init_union_no_designator() {
   UnionTestTy *u = new UnionTestTy{};
-  clang_analyzer_eval(u); // expected-warning{{0}}
+  clang_analyzer_eval(u->x); // expected-warning{{0}}
+  float z = u->y;
   delete u;
 }
 void new_expr_aggr_init_union_designated() {
   UnionTestTy *u = new UnionTestTy{ .x = 14 };
-  clang_analyzer_eval(u); // expected-warning{{14}}
+  clang_analyzer_eval(u->x); // expected-warning{{14}}
   delete u;
+}
+void new_expr_aggr_init_union_designated2() {
+  UnionTestTy *u = new UnionTestTy{ .y = 3.14 };
+  clang_analyzer_eval(u->y); // expected-warning{{3.14}}
+  delete u;
+}
+
+union UnionTestTyWithDefaultMemberInit {
+  int x;
+  float y = 6.55;
+};
+void union_with_default_member_init_empty_init_list() {
+  auto U = new UnionTestTyWithDefaultMemberInit{};
+  clang_analyzer_eval(U->y); // expected-warning{{6.55}}
+  float z = U->x;
+  delete U;
 }
 } // namespace CXX17_newexpr_aggregate_init_list_initialization
 

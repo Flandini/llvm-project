@@ -1063,32 +1063,71 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   if (!Init)
     return;
 
-  if (const InitListExpr *ILE = dyn_cast<InitListExpr>(Init)) {
-    QualType AllocType = CNE->getAllocatedType();
-    // Semantic form of ILE means that all members have an initializer present
-    // in the ILE
-    if (AllocType->isAggregateType() && ILE->isSemanticForm()) {
-      const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
-      for (auto [FD, InitExpr] :
-           llvm::zip_equal(Record->fields(), ILE->children())) {
+  // Three cases:
+  // 1. There is a parenthesized expression list (constructor), handled
+  // elsewhere. TODO: check where elsewhere and how it works
+  if (isa<CXXConstructExpr>(Init))
+    return;
+
+  const InitListExpr *ILE = dyn_cast<InitListExpr>(Init);
+  // 2. There is no initializer, default construct
+  if (!ILE)
+    return;
+
+  // 3. There is a braced initializer list, do direct list initialization
+  QualType AllocType = CNE->getAllocatedType();
+
+  const InitListExpr *SyntacticILE = ILE->getSyntacticForm();
+  bool IsDesignatedILE = SyntacticILE->hasDesignatedInit();
+
+  // Aggregate initialization
+  if (IsDesignatedILE && AllocType->isAggregateType()) {
+    const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
+
+    // If it's a union and there is a designated init clause, then that one
+    // field gets initialized.
+    if (Record->isUnion()) {
+      assert(1 == std::distance(ILE->child_begin(), ILE->child_end()));
+      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
+      SVal FieldLVal = State->getLValue(UnionField, Result);
+      SVal InitSVal = State->getSVal(*ILE->child_begin(), LCtx);
+      State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+    } else {
+      for (auto [FD, InitExpr] : llvm::zip_equal(Record->fields(), ILE->children())) {
         SVal FieldLVal = State->getLValue(FD, Result);
         SVal InitSVal = State->getSVal(InitExpr, LCtx);
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
       }
-      Bldr.takeNodes(NewN);
-      Bldr.generateNode(CNE, NewN, State, nullptr, ProgramPoint::PostStoreKind);
-      return;
     }
+
+    Bldr.takeNodes(NewN);
+    Bldr.generateNode(CNE, NewN, State);
   }
+
+  // Semantic form of ILE means that all members have an initializer present
+  // in the ILE
+  // if (AllocType->isAggregateType() && ILE->isSemanticForm()) {
+  //   const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
+  //   // NodeBuilder InitNB(NewN);
+  //   for (auto [FD, InitExpr] :
+  //         llvm::zip_equal(Record->fields(), ILE->children())) {
+  //     ExplodedNodeSet Dst;
+  //     SVal FieldLVal = State->getLValue(FD, Result);
+  //     SVal InitSVal = State->getSVal(InitExpr, LCtx);
+  //     State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+  //   }
+  //   Bldr.takeNodes(NewN);
+  //   Bldr.generateNode(CNE, NewN, State, nullptr, ProgramPoint::PostStoreKind);
+  // }
 
   // If the type is not a record, we won't have a CXXConstructExpr as an
   // initializer. Copy the value over.
-  if (!isa<CXXConstructExpr>(Init)) {
-    assert(Bldr.getResults().size() == 1);
-    Bldr.takeNodes(NewN);
-    evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
-             /*FirstInit=*/IsStandardGlobalOpNewFunction);
-  }
+  // if (!isa<CXXConstructExpr>(Init)) {
+  //   assert(Bldr.getResults().size() == 1);
+  //   Bldr.takeNodes(NewN);
+  //   evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
+  //            /*FirstInit=*/IsStandardGlobalOpNewFunction);
+  // }
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
