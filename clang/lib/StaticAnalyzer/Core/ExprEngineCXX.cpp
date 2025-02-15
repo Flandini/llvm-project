@@ -1099,7 +1099,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
       assert(1 == NumInitExprElements);
       const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
       SVal FieldLVal = State->getLValue(UnionField, Result);
-      SVal InitSVal = State->getSVal(*ILE->child_begin(), LCtx);
+      SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
       State = State->bindLoc(FieldLVal, InitSVal, LCtx);
     } else {
       for (auto [FD, InitExpr] : llvm::zip_equal(Record->fields(), ILE->children())) {
@@ -1115,39 +1115,12 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   else if (ILE->isStringLiteralInit()) {
     // If the AllocType is some char type array and the init list contains
     // exactly one string literal expression for the corresponding char type
-    const Stmt *ILEChild = *ILE->child_begin();
-    const StringLiteral *InitExpr = dyn_cast<StringLiteral *>(ILEChild);
-    if (!InitExpr)
-      return;
+    const Expr *InitExpr = ILE->getInit(0);
+    // TODO: how are string regions represented
   }
   else if (AllocType->isAggregateType()) {
-
+    // Then AllocType is class or array type
   }
-
-  // Semantic form of ILE means that all members have an initializer present
-  // in the ILE
-  // if (AllocType->isAggregateType() && ILE->isSemanticForm()) {
-  //   const CXXRecordDecl *Record = AllocType->getAsCXXRecordDecl();
-  //   // NodeBuilder InitNB(NewN);
-  //   for (auto [FD, InitExpr] :
-  //         llvm::zip_equal(Record->fields(), ILE->children())) {
-  //     ExplodedNodeSet Dst;
-  //     SVal FieldLVal = State->getLValue(FD, Result);
-  //     SVal InitSVal = State->getSVal(InitExpr, LCtx);
-  //     State = State->bindLoc(FieldLVal, InitSVal, LCtx);
-  //   }
-  //   Bldr.takeNodes(NewN);
-  //   Bldr.generateNode(CNE, NewN, State, nullptr, ProgramPoint::PostStoreKind);
-  // }
-
-  // If the type is not a record, we won't have a CXXConstructExpr as an
-  // initializer. Copy the value over.
-  // if (!isa<CXXConstructExpr>(Init)) {
-  //   assert(Bldr.getResults().size() == 1);
-  //   Bldr.takeNodes(NewN);
-  //   evalBind(Dst, CNE, NewN, Result, State->getSVal(Init, LCtx),
-  //            /*FirstInit=*/IsStandardGlobalOpNewFunction);
-  // }
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
