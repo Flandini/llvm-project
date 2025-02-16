@@ -942,7 +942,7 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
 void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordDecl *Record) {
   assert(Record->getTypeForDecl()->isAggregateType());
   // 1. Direct base classes in declaration order
-  // 2. direct non-static data members that are not members of an anonymous union
+  // 2. Direct non-static data members that are not members of an anonymous union
   if (const CXXRecordDecl *CXXRecord = dyn_cast<CXXRecordDecl>(Record)) {
     // TODO
   }
@@ -960,6 +960,22 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordD
     // the class", "A data member is a non-function member"
     if (Field->isUnnamedBitField())
       continue;
+
+    QualType FieldTy = Field->getType();
+    // TODO: test for nested array aggregate
+    if (FieldTy->isAggregateType()) {
+      if (FieldTy->isStructureOrClassType()) {
+        const RecordDecl *InnerAggregate = FieldTy->getAsRecordDecl();
+        GetAggregateElements(Out, InnerAggregate);
+      }
+      else if (FieldTy->isArrayType()) {
+
+      }
+      else {
+        llvm_unreachable("Aggregate should be class or array type");
+      }
+      continue;
+    }
 
     Out.push_back(Field);
   }
