@@ -981,16 +981,31 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Elts, const Record
   }
 }
 
-static void evalListInitialization(ExplodedNodeSet &Src, ExplodedNodeSet &Dst,
-                                   NodeBuilderContext &BldrCtxt,
+static void evalListInitialization(ExplodedNodeSet &Dst,
+                                   const NodeBuilderContext &BldrCtxt,
                                   QualType TargetType, SVal TargetBaseRegion,
                                   const InitListExpr *ILE) {
-  StmtNodeBuilder Bldr(Src, Dst, BldrCtxt);
-
   // The syntactic form is what is in source, the semantic form is
   // transformed by clang into 'what it should be'
   bool IsDesignatedILE = ILE->getSyntacticForm()->hasDesignatedInit();
   size_t NumInitExprElements = ILE->getNumInits();
+
+  auto BindInAllPreds = [&](ExplodedNodeSet &Dst, const FieldDecl *FD, const Stmt *InitExpr) {
+    ExplodedNodeSet PostBinding;
+    StmtNodeBuilder Bldr(Dst, PostBinding, BldrCtxt);
+    
+    for (ExplodedNode *Pred : Dst) {
+      ProgramStateRef State = Pred->getState();
+      SVal FieldLVal = State->getLValue(FD, TargetBaseRegion);
+      const LocationContext *LCtx = Pred->getLocationContext();
+      SVal InitSVal = State->getSVal(InitExpr, LCtx);
+      State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      Bldr.generateNode(ILE, Pred, State);
+    }
+
+    Dst.clear();
+    Dst.insert(PostBinding);
+  };
 
   // Aggregate initialization
   if (IsDesignatedILE && TargetType->isAggregateType() && TargetType->isRecordType()) {
@@ -1001,26 +1016,19 @@ static void evalListInitialization(ExplodedNodeSet &Src, ExplodedNodeSet &Dst,
     if (Record->isUnion()) {
       assert(1 == NumInitExprElements);
       const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
-      SVal FieldLVal = State->getLValue(UnionField, Result);
-      SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
-      State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      BindInAllPreds(Dst, UnionField, ILE->getInit(0));   
     } else {
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
       for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-        SVal FieldLVal = State->getLValue(FD, Result);
-        SVal InitSVal = State->getSVal(InitExpr, LCtx);
-        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+	BindInAllPreds(Dst, FD, InitExpr);
       }
     }
-
-    Bldr.takeNodes(NewN);
-    Bldr.generateNode(CNE, NewN, State);
   }
   else if (ILE->isStringLiteralInit()) {
     // If the TargetType is some char type array and the init list contains
     // exactly one string literal expression for the corresponding char type
-    const Expr *InitExpr = ILE->getInit(0);
+    // const Expr *InitExpr = ILE->getInit(0);
     // TODO: how are string regions represented
   }
   else if (TargetType->isAggregateType()) {
@@ -1032,33 +1040,28 @@ static void evalListInitialization(ExplodedNodeSet &Src, ExplodedNodeSet &Dst,
     if (Record->isUnion()) {
       const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
       // General list initialization of the first element
-      SVal FieldLVal = State->getLValue(UnionField, Result);
+      // SVal FieldLVal = State->getLValue(UnionField, TargetBaseRegion);
       // SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
       // State = State->bindLoc(FieldLVal, InitSVal, LCtx);
     } else {
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
-      for (const FieldDecl *FD : Record->fields()) {
-        llvm::dbgs() << "Field is:\n";
-        FD->dump();
-      }
-      for (const FieldDecl *Elt : AggrElements) {
-        llvm::dbgs() << "AggrElement is:\n";
-        Elt->dump();
-      }
-      for (const Stmt *InitExpr : ILE->children()) {
-        llvm::dbgs() << "ILE is:\n";
-        InitExpr->dump();
-      }
+      // for (const FieldDecl *FD : Record->fields()) {
+      //   llvm::dbgs() << "Field is:\n";
+      //   FD->dump();
+      // }
+      // for (const FieldDecl *Elt : AggrElements) {
+      //   llvm::dbgs() << "AggrElement is:\n";
+      //   Elt->dump();
+      // }
+      // for (const Stmt *InitExpr : ILE->children()) {
+      //   llvm::dbgs() << "ILE is:\n";
+      //   InitExpr->dump();
+      // }
       for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-        SVal FieldLVal = State->getLValue(FD, Result);
-        SVal InitSVal = State->getSVal(InitExpr, LCtx);
-        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+	BindInAllPreds(Dst, FD, InitExpr);
       }
     }
-
-    Bldr.takeNodes(NewN);
-    Bldr.generateNode(CNE, NewN, State);
   }
 }
 
@@ -1206,8 +1209,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   //    AST which is handled elsewhere though it is still technically 
   //    direct list init.
   QualType AllocType = CNE->getAllocatedType();
-  ExplodedNodeSet PreListInit(Bldr.getResults());
-  evalListInitialization(PreListInit, Dst, *currBldrCtx, AllocType, Result, ILE);
+  evalListInitialization(Dst, *currBldrCtx, AllocType, Result, ILE);
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
