@@ -952,6 +952,8 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordD
     // [dcl.init.aggr] "that are not members of an anonymous union"
     if (Field->isAnonymousStructOrUnion())
       continue;
+    if (isa<IndirectFieldDecl>(Field) && Field->isImplicit())
+      continue;
 
     // [dcl.init.aggr] "non-static data members", [class.mem#general-3],
     // "each undeclared entity that is not an unnamed bit-field is a member of
@@ -1128,7 +1130,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     } else {
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
-      for (auto [FD, InitExpr] : llvm::zip(AggrElements, ILE->children())) {
+      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
         SVal FieldLVal = State->getLValue(FD, Result);
         SVal InitSVal = State->getSVal(InitExpr, LCtx);
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
@@ -1159,7 +1161,19 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
     } else {
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
-      for (auto [FD, InitExpr] : llvm::zip(AggrElements, ILE->children())) {
+      // for (const FieldDecl *FD : Record->fields()) {
+      //   llvm::dbgs() << "Field is:\n";
+      //   FD->dump();
+      // }
+      // for (const FieldDecl *Elt : AggrElements) {
+      //   llvm::dbgs() << "AggrElement is:\n";
+      //   Elt->dump();
+      // }
+      // for (const Stmt *InitExpr : ILE->children()) {
+      //   llvm::dbgs() << "ILE is:\n";
+      //   InitExpr->dump();
+      // }
+      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
         SVal FieldLVal = State->getLValue(FD, Result);
         SVal InitSVal = State->getSVal(InitExpr, LCtx);
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
