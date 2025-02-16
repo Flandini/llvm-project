@@ -320,7 +320,6 @@ struct NonConsideredFields {
   static int s;
   int j;
   int :17;
-  union { int x; float y; };
   int k;
 };
 void considered_fields_initd() {
@@ -380,6 +379,7 @@ void union_with_default_member_init_empty_init_list() {
 
 void char_array_string_literal_init_char() {
   auto somestring = new char[sizeof("hello,world")] { "hello,world" };
+  delete[] somestring;
 }
 } // namespace CXX17_newexpr_aggregate_init_list_initialization
 
