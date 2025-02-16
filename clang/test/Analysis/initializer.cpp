@@ -381,6 +381,66 @@ void char_array_string_literal_init_char() {
   auto somestring = new char[sizeof("hello,world")] { "hello,world" };
   delete[] somestring;
 }
+
+struct Inner {
+  int bar;
+};
+struct Nested {
+  int foo;
+  Inner inner;
+  int baz;
+};
+void nested_aggregates() {
+  auto N = new Nested{};
+  clang_analyzer_eval(0 == N->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N->baz); // expected-warning{{TRUE}}
+
+  auto N1 = new Nested{1};
+  clang_analyzer_eval(1 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N1->baz); // expected-warning{{TRUE}}
+
+  auto N2 = new Nested{.baz = 14};
+  clang_analyzer_eval(0 == N->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(14 == N->baz); // expected-warning{{TRUE}}
+
+  auto N3 = new Nested{1,2,3};
+  clang_analyzer_eval(1 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(2 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == N1->baz); // expected-warning{{TRUE}}
+
+  auto N4 = new Nested{1, {}, 3};
+  clang_analyzer_eval(1 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == N1->baz); // expected-warning{{TRUE}}
+
+  auto N5 = new Nested{{},{},{}};
+  clang_analyzer_eval(0 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(0 == N1->baz); // expected-warning{{TRUE}}
+
+  auto N6 = new Nested{1, {.bar = 2}, 3};
+  clang_analyzer_eval(1 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(2 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == N1->baz); // expected-warning{{TRUE}}
+
+  auto N7 = new Nested{1, {2}, 3};
+  clang_analyzer_eval(1 == N1->foo); // expected-warning{{TRUE}}
+  clang_analyzer_eval(2 == N1->inner.bar); // expected-warning{{TRUE}}
+  clang_analyzer_eval(3 == N1->baz); // expected-warning{{TRUE}}
+
+  delete N;
+  delete N1;
+  delete N2;
+  delete N3;
+  delete N4;
+  delete N5;
+  delete N6;
+  delete N7;
+}
+
 } // namespace CXX17_newexpr_aggregate_init_list_initialization
 
 namespace CXX17_transparent_init_list_exprs {
