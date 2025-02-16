@@ -939,6 +939,30 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
   }
 }
 
+void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordDecl *Record) {
+  assert(Record->getTypeForDecl()->isAggregateType());
+  // 1. Direct base classes in declaration order
+  // 2. direct non-static data members that are not members of an anonymous union
+  if (const CXXRecordDecl *CXXRecord = dyn_cast<CXXRecordDecl>(Record)) {
+    // TODO
+  }
+
+  for (const FieldDecl *Field : Record->fields()) {
+
+    // [dcl.init.aggr] "that are not members of an anonymous union"
+    if (Field->isAnonymousStructOrUnion())
+      continue;
+
+    // [dcl.init.aggr] "non-static data members", [class.mem#general-3],
+    // "each undeclared entity that is not an unnamed bit-field is a member of
+    // the class", "A data member is a non-function member"
+    if (Field->isUnnamedBitField())
+      continue;
+
+    Out.push_back(Field);
+  }
+}
+
 void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
                                    ExplodedNodeSet &Dst) {
   // FIXME: Much of this should eventually migrate to CXXAllocatorCall.
@@ -1090,7 +1114,7 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   size_t NumInitExprElements = ILE->getNumInits();
 
   // Aggregate initialization
-  if (IsDesignatedILE && AllocType->isAggregateType() && AllocType->isClassType()) {
+  if (IsDesignatedILE && AllocType->isAggregateType() && AllocType->isRecordType()) {
     const RecordDecl *Record = AllocType->getAsRecordDecl();
 
     // If it's a union and there is a designated init clause, then that one
@@ -1102,7 +1126,9 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
       SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
       State = State->bindLoc(FieldLVal, InitSVal, LCtx);
     } else {
-      for (auto [FD, InitExpr] : llvm::zip_equal(Record->fields(), ILE->children())) {
+      SmallVector<const FieldDecl *> AggrElements;
+      GetAggregateElements(AggrElements, Record);
+      for (auto [FD, InitExpr] : llvm::zip(AggrElements, ILE->children())) {
         SVal FieldLVal = State->getLValue(FD, Result);
         SVal InitSVal = State->getSVal(InitExpr, LCtx);
         State = State->bindLoc(FieldLVal, InitSVal, LCtx);
@@ -1120,6 +1146,28 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   }
   else if (AllocType->isAggregateType()) {
     // Then AllocType is class or array type
+    const RecordDecl *Record = AllocType->getAsRecordDecl();
+
+    // If it's a union and there is a designated init clause, then that one
+    // field gets initialized.
+    if (Record->isUnion()) {
+      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
+      // General list initialization of the first element
+      SVal FieldLVal = State->getLValue(UnionField, Result);
+      // SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
+      // State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+    } else {
+      SmallVector<const FieldDecl *> AggrElements;
+      GetAggregateElements(AggrElements, Record);
+      for (auto [FD, InitExpr] : llvm::zip(AggrElements, ILE->children())) {
+        SVal FieldLVal = State->getLValue(FD, Result);
+        SVal InitSVal = State->getSVal(InitExpr, LCtx);
+        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      }
+    }
+
+    Bldr.takeNodes(NewN);
+    Bldr.generateNode(CNE, NewN, State);
   }
 }
 
