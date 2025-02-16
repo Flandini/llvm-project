@@ -939,7 +939,7 @@ void ExprEngine::VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
   }
 }
 
-void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordDecl *Record) {
+void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Elts, const RecordDecl *Record) {
   assert(Record->getTypeForDecl()->isAggregateType());
   // 1. Direct base classes in declaration order
   // 2. Direct non-static data members that are not members of an anonymous union
@@ -966,7 +966,7 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordD
     if (FieldTy->isAggregateType()) {
       if (FieldTy->isStructureOrClassType()) {
         const RecordDecl *InnerAggregate = FieldTy->getAsRecordDecl();
-        GetAggregateElements(Out, InnerAggregate);
+        GetAggregateElements(Elts, InnerAggregate);
       }
       else if (FieldTy->isArrayType()) {
 
@@ -977,7 +977,88 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Out, const RecordD
       continue;
     }
 
-    Out.push_back(Field);
+    Elts.push_back(Field);
+  }
+}
+
+static void evalListInitialization(ExplodedNodeSet &Src, ExplodedNodeSet &Dst,
+                                   NodeBuilderContext &BldrCtxt,
+                                  QualType TargetType, SVal TargetBaseRegion,
+                                  const InitListExpr *ILE) {
+  StmtNodeBuilder Bldr(Src, Dst, BldrCtxt);
+
+  // The syntactic form is what is in source, the semantic form is
+  // transformed by clang into 'what it should be'
+  bool IsDesignatedILE = ILE->getSyntacticForm()->hasDesignatedInit();
+  size_t NumInitExprElements = ILE->getNumInits();
+
+  // Aggregate initialization
+  if (IsDesignatedILE && TargetType->isAggregateType() && TargetType->isRecordType()) {
+    const RecordDecl *Record = TargetType->getAsRecordDecl();
+
+    // If it's a union and there is a designated init clause, then that one
+    // field gets initialized.
+    if (Record->isUnion()) {
+      assert(1 == NumInitExprElements);
+      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
+      SVal FieldLVal = State->getLValue(UnionField, Result);
+      SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
+      State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+    } else {
+      SmallVector<const FieldDecl *> AggrElements;
+      GetAggregateElements(AggrElements, Record);
+      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
+        SVal FieldLVal = State->getLValue(FD, Result);
+        SVal InitSVal = State->getSVal(InitExpr, LCtx);
+        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      }
+    }
+
+    Bldr.takeNodes(NewN);
+    Bldr.generateNode(CNE, NewN, State);
+  }
+  else if (ILE->isStringLiteralInit()) {
+    // If the TargetType is some char type array and the init list contains
+    // exactly one string literal expression for the corresponding char type
+    const Expr *InitExpr = ILE->getInit(0);
+    // TODO: how are string regions represented
+  }
+  else if (TargetType->isAggregateType()) {
+    // Then TargetType is class or array type
+    const RecordDecl *Record = TargetType->getAsRecordDecl();
+
+    // If it's a union and there is a designated init clause, then that one
+    // field gets initialized.
+    if (Record->isUnion()) {
+      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
+      // General list initialization of the first element
+      SVal FieldLVal = State->getLValue(UnionField, Result);
+      // SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
+      // State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+    } else {
+      SmallVector<const FieldDecl *> AggrElements;
+      GetAggregateElements(AggrElements, Record);
+      for (const FieldDecl *FD : Record->fields()) {
+        llvm::dbgs() << "Field is:\n";
+        FD->dump();
+      }
+      for (const FieldDecl *Elt : AggrElements) {
+        llvm::dbgs() << "AggrElement is:\n";
+        Elt->dump();
+      }
+      for (const Stmt *InitExpr : ILE->children()) {
+        llvm::dbgs() << "ILE is:\n";
+        InitExpr->dump();
+      }
+      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
+        SVal FieldLVal = State->getLValue(FD, Result);
+        SVal InitSVal = State->getSVal(InitExpr, LCtx);
+        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      }
+    }
+
+    Bldr.takeNodes(NewN);
+    Bldr.generateNode(CNE, NewN, State);
   }
 }
 
@@ -1125,80 +1206,8 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   //    AST which is handled elsewhere though it is still technically 
   //    direct list init.
   QualType AllocType = CNE->getAllocatedType();
-
-  // The syntactic form is what is in source, the semantic form is
-  // transformed by clang into 'what it should be'
-  bool IsDesignatedILE = ILE->getSyntacticForm()->hasDesignatedInit();
-  size_t NumInitExprElements = ILE->getNumInits();
-
-  // Aggregate initialization
-  if (IsDesignatedILE && AllocType->isAggregateType() && AllocType->isRecordType()) {
-    const RecordDecl *Record = AllocType->getAsRecordDecl();
-
-    // If it's a union and there is a designated init clause, then that one
-    // field gets initialized.
-    if (Record->isUnion()) {
-      assert(1 == NumInitExprElements);
-      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
-      SVal FieldLVal = State->getLValue(UnionField, Result);
-      SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
-      State = State->bindLoc(FieldLVal, InitSVal, LCtx);
-    } else {
-      SmallVector<const FieldDecl *> AggrElements;
-      GetAggregateElements(AggrElements, Record);
-      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-        SVal FieldLVal = State->getLValue(FD, Result);
-        SVal InitSVal = State->getSVal(InitExpr, LCtx);
-        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
-      }
-    }
-
-    Bldr.takeNodes(NewN);
-    Bldr.generateNode(CNE, NewN, State);
-  }
-  else if (ILE->isStringLiteralInit()) {
-    // If the AllocType is some char type array and the init list contains
-    // exactly one string literal expression for the corresponding char type
-    const Expr *InitExpr = ILE->getInit(0);
-    // TODO: how are string regions represented
-  }
-  else if (AllocType->isAggregateType()) {
-    // Then AllocType is class or array type
-    const RecordDecl *Record = AllocType->getAsRecordDecl();
-
-    // If it's a union and there is a designated init clause, then that one
-    // field gets initialized.
-    if (Record->isUnion()) {
-      const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
-      // General list initialization of the first element
-      SVal FieldLVal = State->getLValue(UnionField, Result);
-      // SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
-      // State = State->bindLoc(FieldLVal, InitSVal, LCtx);
-    } else {
-      SmallVector<const FieldDecl *> AggrElements;
-      GetAggregateElements(AggrElements, Record);
-      // for (const FieldDecl *FD : Record->fields()) {
-      //   llvm::dbgs() << "Field is:\n";
-      //   FD->dump();
-      // }
-      // for (const FieldDecl *Elt : AggrElements) {
-      //   llvm::dbgs() << "AggrElement is:\n";
-      //   Elt->dump();
-      // }
-      // for (const Stmt *InitExpr : ILE->children()) {
-      //   llvm::dbgs() << "ILE is:\n";
-      //   InitExpr->dump();
-      // }
-      for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-        SVal FieldLVal = State->getLValue(FD, Result);
-        SVal InitSVal = State->getSVal(InitExpr, LCtx);
-        State = State->bindLoc(FieldLVal, InitSVal, LCtx);
-      }
-    }
-
-    Bldr.takeNodes(NewN);
-    Bldr.generateNode(CNE, NewN, State);
-  }
+  ExplodedNodeSet PreListInit(Bldr.getResults());
+  evalListInitialization(PreListInit, Dst, *currBldrCtx, AllocType, Result, ILE);
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
