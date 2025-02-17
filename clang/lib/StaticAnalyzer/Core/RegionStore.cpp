@@ -2444,16 +2444,16 @@ RegionStoreManager::bind(RegionBindingsConstRef B, Loc L, SVal V) {
     QualType Ty = SymReg->getPointeeStaticType();
     if (Ty->isVoidType())
       Ty = StateMgr.getContext().CharTy;
-    R = GetElementZeroRegion(SymReg, Ty);
+    const ElementRegion *ER = GetElementZeroRegion(SymReg, Ty);
 
-    // if (Ty->isArrayType())
-    //   return bindArray(B, TR, V);
+    if (Ty->isArrayType())
+      return bindArray(B, ER, V);
     if (Ty->isStructureOrClassType())
-      return bindStruct(B, R, V);
-    // if (Ty->isVectorType())
-    //   return bindVector(B, TR, V);
-    // if (Ty->isUnionType())
-    //   return bindAggregate(B, TR, V);
+      return bindStruct(B, ER, V);
+    if (Ty->isVectorType())
+      return bindVector(B, ER, V);
+    if (Ty->isUnionType())
+      return bindAggregate(B, ER, V);
   }
 
   assert((!isa<CXXThisRegion>(R) || !B.lookup(R)) &&
