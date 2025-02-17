@@ -998,9 +998,42 @@ private:
                                             const LocationContext *FromLC,
                                             const LocationContext *ToLC);
 
+  class ListInitTarget {
+    const void *Target;
+    bool ExprActive;
+
+  public:
+    explicit ListInitTarget(const Expr *Ex) : Target(Ex), ExprActive(true) {}
+    explicit ListInitTarget(const FieldDecl *Field) : Target(Field), ExprActive(false) {}
+
+    bool IsExpr() const { return ExprActive; }
+    bool IsFieldDecl() const { return !IsExpr(); }
+
+    const Expr *GetExpr() const { 
+      assert(ExprActive); 
+      return reinterpret_cast<const Expr*>(Target); 
+    }
+    const FieldDecl *GetFieldDecl() const { 
+      assert(ExprActive); 
+      return reinterpret_cast<const FieldDecl*>(Target); 
+    }
+
+    QualType GetType() {
+      return IsExpr() ? GetExpr()->getType() : GetFieldDecl()->getType();
+    }
+
+    SVal GetSVal(ProgramStateRef ST, const LocationContext *LCtx) {
+      // if (IsExpr())
+      //
+        return ST->getSVal(GetExpr(), LCtx);
+      // else
+      //   return ST->getSVal(GetFieldDecl(), LCtx);
+    }
+  };
+
   void evalListInitialization(ExplodedNodeSet &Dst,
                                    const NodeBuilderContext &BldrCtxt,
-                                  QualType TargetType, SVal TargetBaseRegion,
+                                  ListInitTarget Target,
                                   const InitListExpr *ILE);
 };
 

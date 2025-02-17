@@ -2445,6 +2445,15 @@ RegionStoreManager::bind(RegionBindingsConstRef B, Loc L, SVal V) {
     if (Ty->isVoidType())
       Ty = StateMgr.getContext().CharTy;
     R = GetElementZeroRegion(SymReg, Ty);
+
+    // if (Ty->isArrayType())
+    //   return bindArray(B, TR, V);
+    if (Ty->isStructureOrClassType())
+      return bindStruct(B, R, V);
+    // if (Ty->isVectorType())
+    //   return bindVector(B, TR, V);
+    // if (Ty->isUnionType())
+    //   return bindAggregate(B, TR, V);
   }
 
   assert((!isa<CXXThisRegion>(R) || !B.lookup(R)) &&

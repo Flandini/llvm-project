@@ -966,9 +966,10 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Elts, const Record
 }
 
 void ExprEngine::evalListInitialization(ExplodedNodeSet &Dst,
-                                   const NodeBuilderContext &BldrCtxt,
-                                  QualType TargetType, SVal TargetBaseRegion,
-                                  const InitListExpr *ILE) {
+                                        const NodeBuilderContext &BldrCtxt,
+                                        ListInitTarget Target,
+                                        const InitListExpr *ILE) {
+  QualType TargetType = Target.GetType();
   // The syntactic form is what is in source, the semantic form is
   // transformed by clang into 'what it should be'
   bool IsDesignatedILE = ILE->getSyntacticForm()->hasDesignatedInit();
@@ -980,9 +981,11 @@ void ExprEngine::evalListInitialization(ExplodedNodeSet &Dst,
     
     for (ExplodedNode *Pred : Dst) {
       ProgramStateRef State = Pred->getState();
-      SVal FieldLVal = State->getLValue(FD, TargetBaseRegion);
       const LocationContext *LCtx = Pred->getLocationContext();
+
+      SVal FieldLVal = State->getLValue(FD, Target.GetSVal(State, LCtx));
       SVal InitSVal = State->getSVal(InitExpr, LCtx);
+
       State = State->bindLoc(FieldLVal, InitSVal, LCtx);
       Bldr.generateNode(ILE, Pred, State);
     }
@@ -998,15 +1001,14 @@ void ExprEngine::evalListInitialization(ExplodedNodeSet &Dst,
     QualType FieldTy = FD->getType();
     const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
 
+    // ILE is either empty or has one element. If there is a default
+    // member initializer for one of the union members, then there should
+    // be a default expr (CXXDefaultInitExpr on C++).
     for (ExplodedNode *Pred : Dst) {
       ProgramStateRef State = Pred->getState();
-      SVal FieldLVal = State->getLValue(FD, TargetBaseRegion);
-
-      // ILE is either empty or has one element. If there is a default
-      // member initializer for one of the union members, then there should
-      // be a default expr (CXXDefaultInitExpr on C++).
       const LocationContext *LCtx = Pred->getLocationContext();
 
+      SVal FieldLVal = State->getLValue(FD, Target.GetSVal(State, LCtx));
       SVal Init = ILE->getNumInits() ? State->getSVal(ILE->getInit(0), LCtx) : svalBuilder.makeZeroVal(FieldTy);
 
       State = State->bindLoc(FieldLVal, Init, LCtx);
@@ -1068,6 +1070,10 @@ void ExprEngine::evalListInitialization(ExplodedNodeSet &Dst,
       //   InitExpr->dump();
       // }
       for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
+        QualType FDType = FD->getType();
+        if (FDType->isAggregateType() && FDType->isStructureOrClassType()) {
+         
+        }
 	      BindInAllPreds(Dst, FD, InitExpr);
       }
     }
@@ -1134,7 +1140,8 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
           State = State->assume(*dSymVal, true);
   }
 
-  StmtNodeBuilder Bldr(Pred, Dst, *currBldrCtx);
+  ExplodedNodeSet PostAllocationAndCNE;
+  StmtNodeBuilder Bldr(Pred, PostAllocationAndCNE, *currBldrCtx);
 
   SVal Result = symVal;
 
@@ -1217,8 +1224,12 @@ void ExprEngine::VisitCXXNewExpr(const CXXNewExpr *CNE, ExplodedNode *Pred,
   //    aggregate type gets turned into a CXXNewExpr(CXXConstructExpr, ...)
   //    AST which is handled elsewhere though it is still technically 
   //    direct list init.
-  QualType AllocType = CNE->getAllocatedType();
-  evalListInitialization(Dst, *currBldrCtx, AllocType, Result, ILE);
+  // QualType AllocType = CNE->getAllocatedType();
+  for (ExplodedNode *Pred : PostAllocationAndCNE) {
+    SVal Init = Pred->getSVal(ILE);
+    evalBind(Dst, CNE, Pred, Result, Init, /*atDeclInit=*/ true);
+  }
+  // evalListInitialization(Dst, *currBldrCtx, ListInitTarget(CNE), ILE);
 }
 
 void ExprEngine::VisitCXXDeleteExpr(const CXXDeleteExpr *CDE,
