@@ -961,22 +961,6 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Elts, const Record
     if (Field->isUnnamedBitField())
       continue;
 
-    // QualType FieldTy = Field->getType();
-    // TODO: test for nested array aggregate
-    // if (FieldTy->isAggregateType()) {
-    //   if (FieldTy->isStructureOrClassType()) {
-    //     const RecordDecl *InnerAggregate = FieldTy->getAsRecordDecl();
-    //     GetAggregateElements(Elts, InnerAggregate);
-    //   }
-    //   else if (FieldTy->isArrayType()) {
-
-    //   }
-    //   else {
-    //     llvm_unreachable("Aggregate should be class or array type");
-    //   }
-    //   continue;
-    // }
-
     Elts.push_back(Field);
   }
 }
