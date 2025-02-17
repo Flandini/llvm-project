@@ -997,6 +997,11 @@ private:
   static bool areAllObjectsFullyConstructed(ProgramStateRef State,
                                             const LocationContext *FromLC,
                                             const LocationContext *ToLC);
+
+  void evalListInitialization(ExplodedNodeSet &Dst,
+                                   const NodeBuilderContext &BldrCtxt,
+                                  QualType TargetType, SVal TargetBaseRegion,
+                                  const InitListExpr *ILE);
 };
 
 /// Traits for storing the call processing policy inside GDM.

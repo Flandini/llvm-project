@@ -961,27 +961,27 @@ void GetAggregateElements(SmallVectorImpl<const FieldDecl *> &Elts, const Record
     if (Field->isUnnamedBitField())
       continue;
 
-    QualType FieldTy = Field->getType();
+    // QualType FieldTy = Field->getType();
     // TODO: test for nested array aggregate
-    if (FieldTy->isAggregateType()) {
-      if (FieldTy->isStructureOrClassType()) {
-        const RecordDecl *InnerAggregate = FieldTy->getAsRecordDecl();
-        GetAggregateElements(Elts, InnerAggregate);
-      }
-      else if (FieldTy->isArrayType()) {
+    // if (FieldTy->isAggregateType()) {
+    //   if (FieldTy->isStructureOrClassType()) {
+    //     const RecordDecl *InnerAggregate = FieldTy->getAsRecordDecl();
+    //     GetAggregateElements(Elts, InnerAggregate);
+    //   }
+    //   else if (FieldTy->isArrayType()) {
 
-      }
-      else {
-        llvm_unreachable("Aggregate should be class or array type");
-      }
-      continue;
-    }
+    //   }
+    //   else {
+    //     llvm_unreachable("Aggregate should be class or array type");
+    //   }
+    //   continue;
+    // }
 
     Elts.push_back(Field);
   }
 }
 
-static void evalListInitialization(ExplodedNodeSet &Dst,
+void ExprEngine::evalListInitialization(ExplodedNodeSet &Dst,
                                    const NodeBuilderContext &BldrCtxt,
                                   QualType TargetType, SVal TargetBaseRegion,
                                   const InitListExpr *ILE) {
@@ -1007,6 +1007,32 @@ static void evalListInitialization(ExplodedNodeSet &Dst,
     Dst.insert(PostBinding);
   };
 
+  auto BindUnionField = [&](ExplodedNodeSet &Dst, const FieldDecl *FD, const InitListExpr *ILE) {
+    ExplodedNodeSet PostBinding;
+    StmtNodeBuilder Bldr(Dst, PostBinding, BldrCtxt);
+
+    QualType FieldTy = FD->getType();
+    const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
+
+    for (ExplodedNode *Pred : Dst) {
+      ProgramStateRef State = Pred->getState();
+      SVal FieldLVal = State->getLValue(FD, TargetBaseRegion);
+
+      // ILE is either empty or has one element. If there is a default
+      // member initializer for one of the union members, then there should
+      // be a default expr (CXXDefaultInitExpr on C++).
+      const LocationContext *LCtx = Pred->getLocationContext();
+
+      SVal Init = ILE->getNumInits() ? State->getSVal(ILE->getInit(0), LCtx) : svalBuilder.makeZeroVal(FieldTy);
+
+      State = State->bindLoc(FieldLVal, Init, LCtx);
+      Bldr.generateNode(ILE, Pred, State);
+    }
+
+    Dst.clear();
+    Dst.insert(PostBinding);
+  };
+
   // Aggregate initialization
   if (IsDesignatedILE && TargetType->isAggregateType() && TargetType->isRecordType()) {
     const RecordDecl *Record = TargetType->getAsRecordDecl();
@@ -1021,7 +1047,11 @@ static void evalListInitialization(ExplodedNodeSet &Dst,
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
       for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-	BindInAllPreds(Dst, FD, InitExpr);
+        QualType FDType = FD->getType();
+        if (FDType->isAggregateType() && FDType->isStructureOrClassType()) {
+          
+        }
+        BindInAllPreds(Dst, FD, InitExpr);
       }
     }
   }
@@ -1035,14 +1065,9 @@ static void evalListInitialization(ExplodedNodeSet &Dst,
     // Then TargetType is class or array type
     const RecordDecl *Record = TargetType->getAsRecordDecl();
 
-    // If it's a union and there is a designated init clause, then that one
-    // field gets initialized.
     if (Record->isUnion()) {
       const FieldDecl *UnionField = ILE->getInitializedFieldInUnion();
-      // General list initialization of the first element
-      // SVal FieldLVal = State->getLValue(UnionField, TargetBaseRegion);
-      // SVal InitSVal = State->getSVal(ILE->getInit(0), LCtx);
-      // State = State->bindLoc(FieldLVal, InitSVal, LCtx);
+      BindUnionField(Dst, UnionField, ILE);
     } else {
       SmallVector<const FieldDecl *> AggrElements;
       GetAggregateElements(AggrElements, Record);
@@ -1059,7 +1084,7 @@ static void evalListInitialization(ExplodedNodeSet &Dst,
       //   InitExpr->dump();
       // }
       for (auto [FD, InitExpr] : llvm::zip_equal(AggrElements, ILE->children())) {
-	BindInAllPreds(Dst, FD, InitExpr);
+	      BindInAllPreds(Dst, FD, InitExpr);
       }
     }
   }
