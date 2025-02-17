@@ -347,33 +347,35 @@ void public_class_designated_initializers() {
 
 union UnionTestTy {
   int x;
-  float y;
+  char y;
 };
 void new_expr_aggr_init_union_no_designator() {
   UnionTestTy *u = new UnionTestTy{};
   clang_analyzer_eval(0 == u->x); // expected-warning{{TRUE}}
-  float z = u->y;
+  (void) u->y;
   delete u;
 }
-void new_expr_aggr_init_union_designated() {
+void new_expr_aggr_init_union_designated_first_field() {
   UnionTestTy *u = new UnionTestTy{ .x = 14 };
   clang_analyzer_eval(14 == u->x); // expected-warning{{TRUE}}
+  (void) u->y;
   delete u;
 }
-void new_expr_aggr_init_union_designated2() {
-  UnionTestTy *u = new UnionTestTy{ .y = 3.14 };
-  clang_analyzer_eval(3.14 == u->y); // expected-warning{{TRUE}}
+void new_expr_aggr_init_union_designated_non_first_field() {
+  UnionTestTy *u = new UnionTestTy{ .y = 3 };
+  clang_analyzer_eval(3 == u->y); // expected-warning{{TRUE}}
+  (void) u->x;
   delete u;
 }
 
 union UnionTestTyWithDefaultMemberInit {
   int x;
-  float y = 6.55;
+  char y = 14;
 };
 void union_with_default_member_init_empty_init_list() {
   auto U = new UnionTestTyWithDefaultMemberInit{};
-  clang_analyzer_eval(6.55 == U->y); // expected-warning{{TRUE}}
-  float z = U->x;
+  clang_analyzer_eval(14 == U->y); // expected-warning{{TRUE}}
+  (void) U->x;
   delete U;
 }
 
